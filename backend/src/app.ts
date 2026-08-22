@@ -1,0 +1,23 @@
+﻿import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import { env } from './config/env';
+import { errorMiddleware } from './middleware/error.middleware';
+import authRoutes from './routes/auth.routes';
+import projectRoutes from './routes/project.routes';
+import overviewRoutes from './routes/overview.routes';
+const app = express();
+app.use(helmet());
+app.use(cors({ origin: env.CORS_ORIGINS, credentials: true }));
+app.use(express.json());
+app.get('/api/health', (_req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/overview', overviewRoutes);
+app.use((_req, res) => {
+  res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found.' } });
+});
+app.use(errorMiddleware);
+export default app;
