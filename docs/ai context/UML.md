@@ -1,6 +1,6 @@
 # UML.md — SCOPREVO System Design
 
-Format teks/ASCII agar mudah disalin ke tool lain (draw.io, Mermaid, atau langsung dijelaskan ke Emergent AI builder).
+Dokumen ini berfungsi sebagai referensi arsitektur tunggal bagi tim pengembang (Frontend, Backend, QA) dan materi teknis untuk submission DevHandal. Format teks/ASCII digunakan agar mudah dirender oleh tool diagram (draw.io, Mermaid) tanpa kehilangan konteks bisnis.
 
 ---
 
@@ -8,30 +8,30 @@ Format teks/ASCII agar mudah disalin ke tool lain (draw.io, Mermaid, atau langsu
 
 Dua aktor: **Freelancer/Agency** (pengguna terdaftar) dan **Client** (tanpa akun, akses via magic link).
 
-```
+```text
                     ┌─────────────────────────────┐
-                    │         SCOPREVO          │
-                    │                              │
-   Freelancer  ────▶│  Create Project              │
-                    │  Submit Feedback (paste teks) │
-                    │  View AI-Generated Checklist   │
-                    │  View Revision Quota           │
-                    │  Generate Magic Link           │
-                    │  View Revision History         │
-                    │                              │
-   Client      ────▶│  View Checklist (via link)    │
-                    │  View Scope Classification     │
-                    │  Confirm Revision Scope         │
+                    │         SCOPREVO            │
+                    │                             │
+   Freelancer  ────▶│  Create Project             │
+                    │  Submit Feedback (paste teks)│
+                    │  View AI-Generated Checklist │
+                    │  View Revision Quota         │
+                    │  Generate Magic Link         │
+                    │  View Revision History       │
+                    │                             │
+   Client      ────▶│  View Checklist (via link)  │
+                    │  View Scope Classification   │
+                    │  Confirm Revision Scope      │
                     └─────────────────────────────┘
 ```
-
-**Catatan:** Client tidak punya use case "login" atau "register" — ini disengaja, sesuai prinsip zero-friction onboarding.
+**Catatan Arsitektur**: Client tidak memiliki use case "login" atau "register". Ini adalah keputusan desain sadar (zero-friction onboarding) yang dienkapsulasi melalui magicToken pad
 
 ---
 
 ## 2. Sequence Diagram — Core Flow (Submit Feedback → AI Classify → Client Confirm)
 
 ```
+
 Freelancer      Frontend         Backend/API        AI Engine        Database        Client
     │               │                 │                  │               │             │
     │ paste feedback│                 │                  │               │             │
@@ -47,9 +47,10 @@ Freelancer      Frontend         Backend/API        AI Engine        Database   
     │               │                 │◀──────────────────│               │             │
     │               │                 │ validate schema   │               │             │
     │               │                 │───────────────────────────────────▶│             │
-    │               │                 │  save RevisionBatch + Items       │             │
-    │               │                 │  update quota (used/allowed)      │             │
-    │               │                 │  generate magicToken              │             │
+    │               │                 │  BEGIN TRANSACTION                │             │
+    │               │                 │  save RevisionBatch (status=DRAFT)│             │
+    │               │                 │  save RevisionItems               │             │
+    │               │                 │  COMMIT TRANSACTION               │             │
     │               │ checklist +     │                  │               │             │
     │               │ quota + link    │                  │               │             │
     │               │◀────────────────│                  │               │             │
@@ -67,15 +68,17 @@ Freelancer      Frontend         Backend/API        AI Engine        Database   
     │               │                 │  render checklist ──────────────────────────────▶│
     │               │                 │                  │               │  click       │
     │               │                 │                  │               │  "Confirm"   │
+    │               │                 │ POST /portal/:token/confirm      │             │
     │               │                 │◀───────────────────────────────────────────────│
     │               │                 │  update status = APPROVED         │             │
+    │               │                 │  (usedRevisions dihitung dinamis) │             │
     │               │                 │───────────────────────────────────▶│             │
 ```
 
----
+**Catatan Kritis**: Kuota (usedRevisions) TIDAK dikurangi saat POST /batches (status DRAFT). Kuota hanya terpengaruh secara dinamis saat status berubah menjadi APPROVED melalui endpoint 
+
 
 ## 3. State Diagram — RevisionBatch Lifecycle
-
 ```
         ┌───────┐
         │ START │
@@ -83,12 +86,12 @@ Freelancer      Frontend         Backend/API        AI Engine        Database   
             │ freelancer submits feedback text
             ▼
         ┌───────┐
-        │ DRAFT │  (AI processing in progress)
+        │ DRAFT │  (AI processing in progress, quota NOT consumed)
         └───┬───┘
-            │ AI extraction succeeds, items saved
+            │ AI extraction succeeds, items saved, link generated
             ▼
 ┌─────────────────────────┐
-│ PENDING_CONFIRMATION     │  (magic link generated,
+│ PENDING_CONFIRMATION     │  (magic link active,
 │                          │   waiting for client)
 └───────────┬──────────────┘
             │ client clicks "Confirm Revision Scope"
@@ -98,33 +101,36 @@ Freelancer      Frontend         Backend/API        AI Engine        Database   
         └──────────┘
 ```
 
-**Catatan penting:** hanya batch berstatus `APPROVED` yang menambah hitungan `usedRevisions`. Batch yang masih `DRAFT` atau `PENDING_CONFIRMATION` belum "memakan" kuota — ini mencegah freelancer dirugikan kalau klien belum sempat konfirmasi.
+**Aturan Transisi & Kuota:** 
+1. Transisi status untuk **satu batch** bersifat satu arah (forward-only) dan `APPROVED` adalah status akhir (terminal state). Ini mencegah manipulasi kuota dan menjaga audit trail.
+2. Batch yang masih `DRAFT` atau `PENDING_CONFIRMATION` belum memakan kuota.
+3. **"Revisi ronde berikutnya"** (jika klien mengirim feedback baru atau menolak scope via WhatsApp) TIDAK dilakukan dengan memundurkan status batch lama. Itu dilakukan dengan membuat **RevisionBatch BARU** di project yang sama, yang nantinya akan memakan kuota jika batch baru tersebut di-APPROVE.
 
 ---
 
 ## 4. State Diagram — RevisionItem Scope Classification
-
 ```
                     ┌──────────────┐
    AI extracts ────▶│ NEEDS_REVIEW │ (default state jika AI tidak yakin)
    item                └──────┬───────┘
                               │
                 ┌─────────────┼─────────────┐
-                │                            │
-                ▼                            ▼
+                │                           │
+                ▼                           ▼
         ┌───────────┐                ┌────────────────┐
-        │ IN_SCOPE   │                │ OUT_OF_SCOPE    │
-        │            │                │ (reason wajib)  │
+        │ IN_SCOPE  │                │ OUT_OF_SCOPE   │
+        │           │                │ (reason wajib) │
         └───────────┘                └────────────────┘
 ```
 
-AI tidak boleh langsung memutuskan IN/OUT dengan percaya diri penuh untuk kasus ambigu — `NEEDS_REVIEW` adalah jaring pengaman supaya sistem tidak terlihat "ngawur" saat demo (misalnya kasus "ubah alur checkout" yang bisa berarti modifikasi kecil atau fitur baru besar).
+**Enforcement:** Aturan "reason wajib untuk OUT_OF_SCOPE atau NEEDS_REVIEW" ditegakkan dua kali: (1) di layer validasi respons AI (ai.service.ts), dan (2) di level database via CHECK constraint (reason_required_unless_in_scope).
 
 ---
 
 ## 5. Component Overview (high-level, stack-agnostic)
 
 ```
+
 ┌─────────────────────────────────────────────────┐
 │                   Client-facing                  │
 │  ┌───────────────┐        ┌───────────────────┐  │
@@ -145,6 +151,8 @@ AI tidak boleh langsung memutuskan IN/OUT dengan percaya diri penuh untuk kasus 
 │  structured JSON      │   │ RevisionBatch /          │
 │  validation)           │   │ RevisionItem              │
 └───────────────────────┘   └──────────────────────────┘
+
 ```
 
-Ini deliberately dipisah jadi 3 lapisan (client-facing, API, AI+data) supaya penjelasan ke Emergent AI builder tetap jelas per bagian, walau implementasi akhirnya satu platform terintegrasi.
+**Catatan Deployment:** Pemisahan 3 lapisan ini dirancang agar tetap valid dan jelas sebagai referensi arsitektur, baik untuk handover tim maupun sebagai dasar penulisan artikel teknis untuk konteks deployment Tencent EdgeOne Makers.
+```

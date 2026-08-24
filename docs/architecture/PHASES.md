@@ -18,23 +18,45 @@ Ini belum pernah dijalankan sebelumnya — dua hal ini harus dikonfirmasi dulu s
 
 ---
 
-## Day 1 — Foundation
-- [ ] Setup project: Vue 3 + Vite (frontend) + Express.js + TypeScript (backend), database Supabase PostgreSQL
-- [ ] Auth sederhana untuk agency/freelancer (email/password)
-- [ ] CRUD Project (nama, client name, total allowed revisions)
-- [ ] Skeleton halaman dashboard project list
+## Day 1 — Foundation ✅ COMPLETE (2026-08-22)
+- [x] Setup project: Vue 3 + Vite (frontend) + Express.js + TypeScript (backend), database Supabase PostgreSQL
+- [x] Auth sederhana untuk agency/freelancer (email/password, JWT)
+- [x] CRUD Project (nama, client name, total allowed revisions)
+- [ ] Skeleton halaman dashboard project list — **belum dikerjakan, ini scope Gemini (frontend), belum dimulai**
 
-**Exit criteria:** bisa register, bisa login, bisa bikin project baru, muncul di list — dan sudah berjalan di deployment EdgeOne, bukan cuma lokal.
+**Exit criteria (REVISED — lihat catatan di bawah):** bisa register, bisa login, bisa bikin project baru, muncul di list.
+
+**Catatan revisi exit criteria:** Versi sebelumnya mensyaratkan *"sudah berjalan di deployment EdgeOne, bukan cuma lokal."* Ini direvisi setelah keputusan tim (Kimi QA + GPT PM, 2026-08-22): **Day 0 (EdgeOne verification) tidak memblokir closure Day 1.** Day 1 backend sudah PASS berdasarkan 18/18 test terhadap Supabase PostgreSQL asli secara lokal, dengan bukti request/response actual. EdgeOne deployment tetap berjalan sebagai gate terpisah (lihat Day 0), bukan syarat Day 1 selesai. Ini mencegah backend coding tersandera oleh verifikasi platform yang independen.
+
+**Bukti closure Day 1 (ringkasan):**
+- Backend: Express + TypeScript + `pg` (raw SQL, no ORM) + Supabase PostgreSQL — connected via Session Pooler (local dev)
+- JWT Bearer auth, bcrypt password hashing, Zod validation
+- Full Project CRUD, no-cascade-delete guard (`PROJECT_NOT_EMPTY`)
+- Ownership isolation: cross-account access returns `404 NOT_FOUND` (bukan 403 — keputusan sadar untuk tidak membocorkan keberadaan resource orang lain)
+- Error contract `{error:{code,message}}` konsisten di semua endpoint
+- 18/18 integration test PASS terhadap database Supabase asli, dengan bukti request/response mentah, diverifikasi independen (Kimi sampling protocol)
+- Schema DB diverifikasi manual cocok 100% dengan DATABASE.md (4 tabel, CHECK constraint `reason` aktif, FK benar)
+
+**Belum dikerjakan (bukan blocker Day 2, tapi jangan lupa):**
+- Frontend skeleton dashboard (Gemini, belum mulai)
+- `git init` untuk backend — **wajib sebelum Day 2 dimulai**, belum dikonfirmasi selesai
+- Day 0 EdgeOne verification — pending, berjalan paralel
 
 ---
 
-## Day 2 — Revision Engine (inti produk)
-- [ ] Form input: paste teks feedback mentah
-- [ ] Integrasi AI (LLM call) → prompt terstruktur, output JSON wajib
-- [ ] Validasi schema JSON dari AI sebelum disimpan
-- [ ] Simpan sebagai RevisionBatch + RevisionItem
+## Day 2 — Revision Engine (inti produk) ✅ COMPLETE (2026-08-24)
+- [x] Form input: paste teks feedback mentah
+- [x] Integrasi AI (LLM call) → prompt terstruktur, output JSON wajib
+- [x] Validasi schema JSON dari AI sebelum disimpan
+- [x] Simpan sebagai RevisionBatch + RevisionItem
+- [x] Google primary routing + OpenRouter fallback
+- [x] NEEDS_REVIEW schema support & reason enforcement
 
-**Exit criteria:** paste teks WhatsApp contoh → dapat list item terstruktur di database Supabase, bukan cuma tampil di layar.
+**Status:** Prompt eksekusi untuk KiloCode sudah disusun GPT (2026-08-22), scope dikunci ketat: hanya `IN_SCOPE`/`OUT_OF_SCOPE` untuk Day 2, transaction-safe (rollback kalau RevisionItem gagal insert), 16 test case termasuk regresi Day 1. **Eksekusi selesai dan diverifikasi 2026-08-24: 18/18 test PASS.**
+
+**Catatan sengaja (bukan celah):** Day 2 tidak menginstruksikan LLM untuk pernah mengeluarkan `NEEDS_REVIEW` — itu murni scope Day 3. Skema DB (`scope_status` enum, `CHECK` constraint `reason_required_unless_in_scope`) sudah mendukung ketiga nilai sejak awal, jadi tidak ada perubahan schema yang dibutuhkan saat Day 3 mengaktifkan `NEEDS_REVIEW` nanti.
+
+**Exit criteria:** paste teks WhatsApp contoh → dapat list item terstruktur di database Supabase, bukan cuma tampil di layar. ✅ **TERCAPAI**
 
 **Contoh prompt output yang diharapkan:**
 ```json
@@ -47,7 +69,6 @@ Ini belum pernah dijalankan sebelumnya — dua hal ini harus dikonfirmasi dulu s
       "reason": "New feature not related to requested UI refinement" }
   ]
 }
-```
 
 ---
 

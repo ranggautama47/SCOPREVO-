@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { env } from './config/env';
@@ -6,6 +6,7 @@ import { errorMiddleware } from './middleware/error.middleware';
 import authRoutes from './routes/auth.routes';
 import projectRoutes from './routes/project.routes';
 import overviewRoutes from './routes/overview.routes';
+import revisionRoutes from './routes/revision.routes';
 const app = express();
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGINS, credentials: true }));
@@ -15,6 +16,8 @@ app.get('/api/health', (_req, res) => {
 });
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/projects', revisionRoutes);
+app.use('/projects', revisionRoutes);
 app.use('/api/overview', overviewRoutes);
 app.use((_req, res) => {
   res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found.' } });

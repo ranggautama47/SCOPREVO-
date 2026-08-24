@@ -1,4 +1,4 @@
-﻿import dotenv from 'dotenv';
+import dotenv from 'dotenv';
 dotenv.config();
 function requireEnv(name: string): string {
   const value = process.env[name];
@@ -14,4 +14,12 @@ export const env = {
   CORS_ORIGINS: (process.env.CORS_ORIGINS ?? 'http://localhost:5173')
     .split(',')
     .map((o) => o.trim()),
+  PRIMARY_LLM_PROVIDER: process.env.PRIMARY_LLM_PROVIDER ?? 'google',
+  PRIMARY_LLM_BASE_URL: process.env.PRIMARY_LLM_BASE_URL ?? 'https://generativelanguage.googleapis.com/v1beta/openai',
+  PRIMARY_LLM_API_KEY: process.env.PRIMARY_LLM_API_KEY ?? '',
+  PRIMARY_LLM_MODEL: process.env.PRIMARY_LLM_MODEL ?? '',
+  FALLBACK_LLM_PROVIDER: process.env.FALLBACK_LLM_PROVIDER ?? 'openrouter',
+  FALLBACK_LLM_BASE_URL: process.env.FALLBACK_LLM_BASE_URL ?? 'https://openrouter.ai/api/v1',
+  FALLBACK_LLM_API_KEY: process.env.FALLBACK_LLM_API_KEY ?? '',
+  FALLBACK_LLM_MODEL: process.env.FALLBACK_LLM_MODEL ?? '',
 } as const;
