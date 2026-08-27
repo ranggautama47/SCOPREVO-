@@ -9,8 +9,8 @@ export const overviewService = {
   async getOverview(accountId: string): Promise<OverviewDTO> {
     const [projectsResult, pendingResult, revisionsResult, recentResult] = await Promise.all([
       db.query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM project WHERE account_id = $1`, [accountId]),
-      db.query<{ count: string }>(`SELECT COUNT(rb.*)::text AS count FROM revision_batch rb JOIN project p ON p.id = rb.project_id WHERE p.account_id = $1 AND rb.status = ''PENDING_CONFIRMATION''`, [accountId]),
-      db.query<{ count: string }>(`SELECT COUNT(rb.*)::text AS count FROM revision_batch rb JOIN project p ON p.id = rb.project_id WHERE p.account_id = $1 AND rb.status = ''APPROVED''`, [accountId]),
+      db.query<{ count: string }>(`SELECT COUNT(rb.*)::text AS count FROM revision_batch rb JOIN project p ON p.id = rb.project_id WHERE p.account_id = $1 AND rb.status = 'PENDING_CONFIRMATION'`, [accountId]),
+      db.query<{ count: string }>(`SELECT COUNT(rb.*)::text AS count FROM revision_batch rb JOIN project p ON p.id = rb.project_id WHERE p.account_id = $1 AND rb.status = 'APPROVED'`, [accountId]),
       db.query<ProjectRow>(`SELECT id, account_id, name, client_name, total_allowed_revisions, created_at FROM project WHERE account_id = $1 ORDER BY created_at DESC LIMIT $2`, [accountId, RECENT_PROJECT_LIMIT]),
     ]);
     return {

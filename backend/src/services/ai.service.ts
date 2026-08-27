@@ -9,7 +9,9 @@ Return JSON only in this exact shape:
 Use IN_SCOPE, OUT_OF_SCOPE, or NEEDS_REVIEW.
 OUT_OF_SCOPE always requires a non-empty reason.
 NEEDS_REVIEW is for ambiguous items you are unsure about (e.g. unclear whether covered by the contract);
-it also requires a non-empty reason explaining the ambiguity.`;
+it also requires a non-empty reason explaining the ambiguity.
+If a request is ambiguous or you cannot confidently determine whether it falls within the project
+contract scope, classify it as NEEDS_REVIEW and provide a brief reason explaining the ambiguity.`;
 
 export interface ProviderConfig {
   provider: string;

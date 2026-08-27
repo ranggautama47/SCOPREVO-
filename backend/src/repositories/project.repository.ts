@@ -55,8 +55,16 @@ export const projectRepository = {
     const result = await db.query('DELETE FROM project WHERE id = $1', [projectId]);
     return (result.rowCount ?? 0) > 0;
   },
-  async countRevisionBatches(projectId: string): Promise<number> {
+async countRevisionBatches(projectId: string): Promise<number> {
     const result = await db.query<{ count: string }>('SELECT COUNT(*)::text AS count FROM revision_batch WHERE project_id = $1', [projectId]);
+    return parseInt(result.rows[0]?.count ?? '0', 10);
+  },
+
+  async countApprovedBatches(projectId: string): Promise<number> {
+    const result = await db.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM revision_batch WHERE project_id = $1 AND status = 'APPROVED'`,
+      [projectId]
+    );
     return parseInt(result.rows[0]?.count ?? '0', 10);
   },
 };

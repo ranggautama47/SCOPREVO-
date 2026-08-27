@@ -21,4 +21,9 @@ router.post(
   revisionController.createBatch,
 );
 
+router.get(
+  '/:projectId/batches',
+  revisionController.listBatches,
+);
+
 export default router;

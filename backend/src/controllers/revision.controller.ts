@@ -33,4 +33,16 @@ export const revisionController = {
       next(err);
     }
   },
+
+  async listBatches(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const accountId = requireAccountId(req);
+      const { projectId } = req.params;
+
+      const batches = await revisionService.listBatchesByProjectId(projectId, accountId);
+      res.status(200).json({ batches });
+    } catch (err) {
+      next(err);
+    }
+  },
 };

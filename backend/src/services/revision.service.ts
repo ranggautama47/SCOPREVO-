@@ -5,7 +5,7 @@ import {
   revisionItemRepository,
 } from '../repositories/revision.repository';
 import { aiService } from './ai.service';
-import { NotFoundError } from '../middleware/error.middleware';
+import { NotFoundError, ConflictError } from '../middleware/error.middleware';
 import { RevisionBatchRow, RevisionItemRow } from '../types/db.types';
 
 export interface RevisionItemDTO {
@@ -14,7 +14,6 @@ export interface RevisionItemDTO {
   category: string | null;
   scopeStatus: 'IN_SCOPE' | 'OUT_OF_SCOPE' | 'NEEDS_REVIEW';
   reason: string | null;
-  isCompleted: boolean;
 }
 
 export interface RevisionBatchDetailDTO {
@@ -22,27 +21,38 @@ export interface RevisionBatchDetailDTO {
   projectId: string;
   status: 'DRAFT' | 'PENDING_CONFIRMATION' | 'APPROVED';
   summary: string | null;
-  magicToken: string;
-  createdAt: Date;
   items: RevisionItemDTO[];
 }
 
-function toBatchDTO(batch: RevisionBatchRow, items: RevisionItemRow[]): RevisionBatchDetailDTO {
+export interface RevisionBatchListDTO {
+  id: string;
+  status: 'DRAFT' | 'PENDING_CONFIRMATION' | 'APPROVED';
+  createdAt: Date;
+  itemCount: number;
+}
+
+function toBatchDetailDTO(batch: RevisionBatchRow, items: RevisionItemRow[]): RevisionBatchDetailDTO {
   return {
     id: batch.id,
     projectId: batch.project_id,
     status: batch.status,
     summary: batch.ai_summary,
-    magicToken: batch.magic_token,
-    createdAt: batch.created_at,
     items: items.map((item) => ({
       id: item.id,
       description: item.description,
       category: item.category,
       scopeStatus: item.scope_status,
       reason: item.reason,
-      isCompleted: item.is_completed,
     })),
+  };
+}
+
+function toBatchListDTO(batch: RevisionBatchRow & { item_count: string }): RevisionBatchListDTO {
+  return {
+    id: batch.id,
+    status: batch.status,
+    createdAt: batch.created_at,
+    itemCount: parseInt(batch.item_count, 10),
   };
 }
 
@@ -58,10 +68,23 @@ export const revisionService = {
       throw new NotFoundError('Project not found.');
     }
 
-    // 2. Call AI service (validated schema and model fallback/retry)
+    // 2. Quota gate: check remaining revisions (only APPROVED batches count)
+    const usedRevisions = await projectRepository.countApprovedBatches(projectId);
+    const totalAllowed = project.total_allowed_revisions;
+    const remaining = totalAllowed - usedRevisions;
+
+    if (remaining <= 0) {
+      throw new ConflictError(
+        'QUOTA_EXHAUSTED',
+        'No revision quota remaining.',
+        { used: usedRevisions, allowed: totalAllowed, remaining: 0 }
+      );
+    }
+
+    // 3. Call AI service (validated schema and model fallback/retry)
     const aiResult = await aiService.extractRevisions(rawInput);
 
-    // 3. Persist atomically using a PostgreSQL transaction
+    // 4. Persist atomically using a PostgreSQL transaction
     const client = await db.connect();
     try {
       await client.query('BEGIN');
@@ -85,7 +108,7 @@ export const revisionService = {
       }
 
       await client.query('COMMIT');
-      return toBatchDTO(batch, items);
+      return toBatchDetailDTO(batch, items);
     } catch (err) {
       await client.query('ROLLBACK');
       throw err;
@@ -106,6 +129,29 @@ export const revisionService = {
     }
 
     const items = await revisionItemRepository.findAllByBatchId(batchId);
-    return toBatchDTO(batch, items);
+    return toBatchDetailDTO(batch, items);
+  },
+
+  async listBatchesByProjectId(projectId: string, accountId: string): Promise<RevisionBatchListDTO[]> {
+    // Verify project ownership
+    const project = await projectRepository.findById(projectId);
+    if (!project || project.account_id !== accountId) {
+      throw new NotFoundError('Project not found.');
+    }
+
+    // Query batches with item count using LEFT JOIN - no N+1
+    const result = await db.query<RevisionBatchRow & { item_count: string }>(
+      `SELECT
+         rb.id, rb.project_id, rb.raw_input, rb.ai_summary, rb.status, rb.magic_token, rb.created_at,
+         COUNT(ri.id)::text AS item_count
+       FROM revision_batch rb
+       LEFT JOIN revision_item ri ON ri.revision_batch_id = rb.id
+       WHERE rb.project_id = $1
+       GROUP BY rb.id
+       ORDER BY rb.created_at DESC`,
+      [projectId]
+    );
+
+    return result.rows.map(toBatchListDTO);
   },
 };
