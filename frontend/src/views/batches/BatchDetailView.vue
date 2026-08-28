@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { apiClient } from '../api/client';
-import type { RevisionBatchDetail, RevisionBatchStatus, ScopeStatus } from '../types/api';
+import { apiClient } from '../../api/client';
+import type { RevisionBatchDetail, RevisionBatchStatus, ScopeStatus } from '../../types/api';
 
 const route = useRoute();
 const router = useRouter();

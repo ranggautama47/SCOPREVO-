@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { apiClient } from '../api/client';
-import type { OverviewData, Project } from '../types/api';
+import { apiClient } from '../../api/client';
+import type { OverviewData, Project } from '../../types/api';
 
 const router = useRouter();
 

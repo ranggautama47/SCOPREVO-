@@ -45,6 +45,7 @@ export interface RevisionBatchDetail {
   projectId: string;
   status: RevisionBatchStatus;
   summary: string | null;
+  createdAt: string;
   items: RevisionItem[];
 }
 

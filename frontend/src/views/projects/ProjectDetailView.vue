@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { apiClient, ApiError } from '../api/client';
-import type { Project, RevisionBatchSummary, RevisionBatchStatus } from '../types/api';
+import { apiClient, ApiError } from '../../api/client';
+import type { Project, RevisionBatchSummary, RevisionBatchStatus } from '../../types/api';
 
 const route = useRoute();
 const router = useRouter();
@@ -180,7 +180,7 @@ onMounted(() => {
               <div class="flex items-center gap-3">
                 <span class="font-['JetBrains Mono',monospace] text-xs text-[#1A1A1A]/60">{{ batch.itemCount }} item{{ batch.itemCount !== 1 ? 's' : '' }}</span>
                 <span
-                  :class="getStatusBadgeClass(batch.status) + ' px-3 py-1 font-['JetBrains_Mono',monospace] text-xs uppercase rounded-none'"
+                  :class="getStatusBadgeClass(batch.status) + ' px-3 py-1 font-[\'JetBrains_Mono\',monospace] text-xs uppercase rounded-none'"
                 >
                   {{ batch.status.replace('_', ' ') }}
                 </span>

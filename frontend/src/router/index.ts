@@ -5,13 +5,13 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
-    component: () => import('../views/LoginView.vue'),
+    component: () => import('../views/auth/LoginView.vue'),
     meta: { requiresGuest: true },
   },
   {
     path: '/register',
     name: 'register',
-    component: () => import('../views/RegisterView.vue'),
+    component: () => import('../views/auth/RegisterView.vue'),
     meta: { requiresGuest: true },
   },
   {
@@ -30,29 +30,29 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'dashboard',
         name: 'dashboard',
-        component: () => import('../views/DashboardView.vue'),
+        component: () => import('../views/dashboard/DashboardView.vue'),
       },
       {
         path: 'projects',
         name: 'projects',
-        component: () => import('../views/ProjectsView.vue'),
+        component: () => import('../views/projects/ProjectsView.vue'),
       },
       {
         path: 'projects/:id',
         name: 'project-detail',
-        component: () => import('../views/ProjectDetailView.vue'),
+        component: () => import('../views/projects/ProjectDetailView.vue'),
       },
       {
         path: 'batches/:id',
         name: 'batch-detail',
-        component: () => import('../views/BatchDetailView.vue'),
+        component: () => import('../views/batches/BatchDetailView.vue'),
       },
     ],
   },
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
-    component: () => import('../views/NotFoundView.vue'),
+    component: () => import('../views/error/NotFoundView.vue'),
   },
 ];
 

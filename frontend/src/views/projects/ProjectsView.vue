@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { apiClient } from '../api/client';
-import type { Project } from '../types/api';
+import { apiClient } from '../../api/client';
+import type { Project } from '../../types/api';
 
 const router = useRouter();
 
@@ -66,14 +66,6 @@ function navigateToProject(id: string) {
 function getProgressPercent(project: Project): number {
   if (project.totalAllowedRevisions === 0) return 0;
   return Math.min((project.usedRevisions / project.totalAllowedRevisions) * 100, 100);
-}
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('id-ID', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
 }
 
 onMounted(() => {
