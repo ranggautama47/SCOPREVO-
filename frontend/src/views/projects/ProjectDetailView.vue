@@ -18,6 +18,7 @@ const error = ref<string | null>(null);
 const rawInput = ref('');
 const isSubmitting = ref(false);
 const errorMsg = ref('');
+const errorCode = ref<string | null>(null);
 
 async function fetchProjectDetail() {
   isLoading.value = true;
@@ -29,8 +30,8 @@ async function fetchProjectDetail() {
     ]);
     project.value = projectRes.project;
     batches.value = batchesRes.batches;
-  } catch (err: any) {
-    error.value = err.message || 'Failed to load project detail';
+  } catch (err: unknown) {
+    error.value = err instanceof ApiError ? err.message : 'Failed to load project detail';
   } finally {
     isLoading.value = false;
   }
@@ -74,14 +75,21 @@ const isQuotaExhausted = computed(() => {
   return project.value && project.value.remainingRevisions === 0;
 });
 
+function clearError() {
+  errorMsg.value = '';
+  errorCode.value = null;
+}
+
 async function handleSubmitFeedback() {
   if (!rawInput.value.trim()) {
     errorMsg.value = 'Feedback cannot be empty.';
+    errorCode.value = 'VALIDATION_ERROR';
     return;
   }
 
   isSubmitting.value = true;
   errorMsg.value = '';
+  errorCode.value = null;
 
   try {
     const res = await apiClient.projects.submitRevision(projectId.value, rawInput.value);
@@ -91,12 +99,33 @@ async function handleSubmitFeedback() {
     router.push(`/batches/${batchId}`);
   } catch (err: unknown) {
     isSubmitting.value = false;
-    if (err instanceof ApiError && err.code === 'QUOTA_EXHAUSTED') {
-      errorMsg.value = 'No revision quota remaining. Please wait for client approval on previous batches.';
+    if (err instanceof ApiError) {
+      errorCode.value = err.code;
+      switch (err.code) {
+        case 'QUOTA_EXHAUSTED':
+          errorMsg.value = 'Quota exhausted. Wait for client approval.';
+          break;
+        case 'AI_PROCESSING_FAILED':
+          errorMsg.value = 'AI analysis failed. Please try again.';
+          break;
+        case 'NETWORK_ERROR':
+          errorMsg.value = 'Unable to reach the server. Please check your connection.';
+          break;
+        default:
+          // 500/504 and other server errors
+          errorMsg.value = err.status && err.status >= 500
+            ? 'Server error. Please try again later.'
+            : 'Failed to analyze feedback. Please try again.';
+          break;
+      }
     } else {
-      errorMsg.value = 'Failed to analyze feedback. Please try again.';
+      errorMsg.value = 'An unexpected error occurred.';
     }
   }
+}
+
+function handleRetryFeedback() {
+  handleSubmitFeedback();
 }
 
 onMounted(() => {
@@ -106,24 +135,24 @@ onMounted(() => {
 
 <template>
   <section class="p-8 md:p-12">
-    <div v-if="isLoading" class="flex items-center gap-2 font-['JetBrains Mono',monospace] text-sm text-[#1A1A1A]/60">
+    <div v-if="isLoading" class="flex items-center gap-2 font-mono text-sm text-[#1A1A1A]/60">
       <span class="animate-pulse">■</span>
       <span>Loading project...</span>
     </div>
 
-    <div v-else-if="error" class="bg-[#FEE2E2] text-[#991B1B] border-2 border-[#1A1A1A] p-6 rounded-none font-['Noto Serif',serif]">
+    <div v-else-if="error" class="bg-[#FEE2E2] text-[#991B1B] border-2 border-[#1A1A1A] p-6 rounded-none font-body">
       {{ error }}
     </div>
 
     <div v-else-if="project" class="space-y-8">
       <!-- Header Section -->
       <div class="border-b-2 border-[#1A1A1A] pb-6">
-        <h1 class="font-['Baskervville',serif] text-5xl font-normal leading-[1.1] tracking-tight">{{ project.name }}</h1>
+        <h1 class="font-editorial text-5xl font-normal leading-[1.1] tracking-tight">{{ project.name }}</h1>
         <div class="flex flex-wrap items-center gap-4 mt-3">
-          <span class="font-['JetBrains Mono',monospace] text-xs uppercase tracking-wide bg-[#DCCCFF] text-[#1A1A1A] border border-[#1A1A1A] px-3 py-1 rounded-none">
+          <span class="font-mono text-xs uppercase tracking-wide bg-[#DCCCFF] text-[#1A1A1A] border border-[#1A1A1A] px-3 py-1 rounded-none">
             {{ project.clientName }}
           </span>
-          <span class="font-['JetBrains Mono',monospace] text-xs text-[#1A1A1A]/60">Created {{ formatDate(project.createdAt) }}</span>
+          <span class="font-mono text-xs text-[#1A1A1A]/60">Created {{ formatDate(project.createdAt) }}</span>
         </div>
       </div>
 
@@ -131,11 +160,11 @@ onMounted(() => {
       <div class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-6 shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            <p class="font-['Noto Serif',serif] text-lg font-bold text-[#1A1A1A]">
+            <p class="font-body text-lg font-bold text-[#1A1A1A]">
               {{ project.usedRevisions }} / {{ project.totalAllowedRevisions }} revisions used
             </p>
             <p
-              class="font-['Noto Serif',serif] text-base mt-1"
+              class="font-body text-base mt-1"
               :class="isQuotaExhausted ? 'text-[#E63946]' : 'text-[#1A1A1A]/60'"
             >
               {{ project.remainingRevisions }} revision{{ project.remainingRevisions !== 1 ? 's' : '' }} remaining
@@ -149,7 +178,7 @@ onMounted(() => {
                 :style="{ width: progressPercent + '%' }"
               ></div>
             </div>
-            <p class="font-['JetBrains Mono',monospace] text-xs text-[#1A1A1A] mt-1 text-right">
+            <p class="font-mono text-xs text-[#1A1A1A] mt-1 text-right">
               {{ project.usedRevisions }}/{{ project.totalAllowedRevisions }} used
             </p>
           </div>
@@ -158,10 +187,11 @@ onMounted(() => {
 
       <!-- Revision Batches History Section -->
       <div>
-        <h2 class="font-['Baskervville',serif] text-2xl font-normal leading-[1.3] mb-4">Revision Batches</h2>
+        <h2 class="font-editorial text-2xl font-normal leading-[1.3] mb-4">Revision Batches</h2>
 
         <div v-if="batches.length === 0" class="bg-[#FAFAF9] border-2 border-dashed border-[#1A1A1A]/30 p-12 rounded-none text-center">
-          <p class="font-['Baskervville',serif] text-xl text-[#1A1A1A]/60">No revision batches created yet for this project.</p>
+          <p class="font-editorial text-xl text-[#1A1A1A]/60">No revision batches yet</p>
+          <p class="font-body text-sm text-[#1A1A1A]/40 mt-2">Submit your first feedback to get AI analysis.</p>
         </div>
 
         <div v-else class="space-y-3">
@@ -173,14 +203,14 @@ onMounted(() => {
           >
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
               <div class="flex items-center gap-3">
-                <span class="font-['JetBrains Mono',monospace] text-sm text-[#1A1A1A]">{{ getShortId(batch.id) }}</span>
-                <span class="font-['JetBrains Mono',monospace] text-xs text-[#1A1A1A]/60">{{ formatDate(batch.createdAt) }}</span>
+                <span class="font-mono text-sm text-[#1A1A1A]">{{ getShortId(batch.id) }}</span>
+                <span class="font-mono text-xs text-[#1A1A1A]/60">{{ formatDate(batch.createdAt) }}</span>
               </div>
 
               <div class="flex items-center gap-3">
-                <span class="font-['JetBrains Mono',monospace] text-xs text-[#1A1A1A]/60">{{ batch.itemCount }} item{{ batch.itemCount !== 1 ? 's' : '' }}</span>
+                <span class="font-mono text-xs text-[#1A1A1A]/60">{{ batch.itemCount }} item{{ batch.itemCount !== 1 ? 's' : '' }}</span>
                 <span
-                  :class="getStatusBadgeClass(batch.status) + ' px-3 py-1 font-[\'JetBrains_Mono\',monospace] text-xs uppercase rounded-none'"
+                  :class="getStatusBadgeClass(batch.status) + ' px-3 py-1 font-mono text-xs uppercase rounded-none'"
                 >
                   {{ batch.status.replace('_', ' ') }}
                 </span>
@@ -199,12 +229,25 @@ onMounted(() => {
 
         <textarea
           v-model="rawInput"
+          @input="clearError"
           :disabled="isSubmitting"
           class="bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] p-4 font-body text-base leading-[1.6] rounded-none w-full outline-none focus:bg-[#FDFFB6] focus:outline-none placeholder:text-[#1A1A1A]/40 resize-y min-h-[200px] disabled:opacity-50"
           placeholder="e.g., Please adjust hero spacing, change CTA button to dark mode, and add mobile animations."
         ></textarea>
 
         <div class="mt-4 flex flex-col items-start gap-3">
+          <div v-if="errorMsg" class="w-full border-2 border-[#E63946] bg-[#FEE2E2] p-4 rounded-none">
+            <p class="font-ui text-sm uppercase text-[#991B1B] mb-1">{{ errorCode }}</p>
+            <p class="font-body text-base text-[#991B1B]">{{ errorMsg }}</p>
+            <button
+              v-if="errorCode === 'AI_PROCESSING_FAILED' || errorCode === 'NETWORK_ERROR' || (errorCode && !['QUOTA_EXHAUSTED', 'VALIDATION_ERROR'].includes(errorCode))"
+              @click="handleRetryFeedback"
+              class="mt-3 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-ui text-xs uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A]"
+            >
+              Retry
+            </button>
+          </div>
+
           <button
             @click="handleSubmitFeedback"
             :disabled="isQuotaExhausted || isSubmitting"
@@ -216,10 +259,6 @@ onMounted(() => {
           <div v-if="isSubmitting" class="flex items-center gap-2 font-mono text-sm text-[#1A1A1A]/70">
             <span class="animate-pulse">■</span>
             <span>Processing AI scope analysis...</span>
-          </div>
-
-          <div v-if="errorMsg" class="font-body text-sm text-[#E63946]">
-            {{ errorMsg }}
           </div>
         </div>
       </div>

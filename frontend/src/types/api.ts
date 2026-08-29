@@ -46,7 +46,16 @@ export interface RevisionBatchDetail {
   status: RevisionBatchStatus;
   summary: string | null;
   createdAt: string;
+  magicToken: string | null;
   items: RevisionItem[];
+}
+
+export interface ShareBatchResponse {
+  batch: {
+    id: string;
+    status: RevisionBatchStatus;
+    magicToken: string;
+  };
 }
 
 export interface OverviewData {
@@ -66,5 +75,25 @@ export interface ApiErrorResponse {
     code: string;
     message: string;
     details?: any;
+  };
+}
+
+export interface PortalProject {
+  name: string;
+  clientName: string;
+  usedRevisions: number;
+  totalAllowedRevisions: number;
+  remainingRevisions: number;
+}
+
+export interface PortalBatchResponse {
+  batch: {
+    id: string;
+    projectId: string;
+    status: RevisionBatchStatus;
+    summary: string;
+    createdAt: string;
+    items: RevisionItem[];
+    project: PortalProject;
   };
 }

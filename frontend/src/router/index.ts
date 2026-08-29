@@ -50,6 +50,12 @@ const routes: RouteRecordRaw[] = [
     ],
   },
   {
+    path: '/portal/:token',
+    name: 'portal',
+    component: () => import('../views/portal/PortalView.vue'),
+    meta: { public: true, requiresAuth: false },
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('../views/error/NotFoundView.vue'),
@@ -63,6 +69,11 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore();
+
+  // Allow public routes to bypass auth checks entirely
+  if (to.meta.public) {
+    return next();
+  }
 
   // If unauthenticated user hits any unknown route, redirect to login
   if (to.name === 'not-found' && !authStore.isAuthenticated) {

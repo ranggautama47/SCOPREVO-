@@ -4,19 +4,46 @@ import type {
   Project,
   RevisionBatchSummary,
   RevisionBatchDetail,
+  ShareBatchResponse,
+  PortalBatchResponse,
   ApiErrorResponse,
 } from '../types/api';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
+const TOKEN_KEY = 'scoprevo_jwt';
 
-class ApiError extends Error {
+// Module-level guard: prevents infinite redirect loops if /login itself ever returns 401.
+// window.location.href triggers an immediate navigation/reload, so this is belt-and-suspenders.
+let _isRedirectingFor401 = false;
+
+function handleUnauthorized(): void {
+  // Always clear the (now invalid) token.
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    // ignore storage errors (e.g., disabled storage)
+  }
+
+  const path = window.location.pathname;
+  const onAuthPage = path.startsWith('/login') || path.startsWith('/register');
+
+  if (_isRedirectingFor401 || onAuthPage) return;
+
+  _isRedirectingFor401 = true;
+  // Hard redirect (not router.push) so all in-memory state is discarded cleanly.
+  window.location.href = '/login';
+}
+
+export class ApiError extends Error {
   code: string;
+  status?: number;
   details?: any;
 
-  constructor(code: string, message: string, details?: any) {
+  constructor(code: string, message: string, status?: number, details?: any) {
     super(message);
     this.name = 'ApiError';
     this.code = code;
+    this.status = status;
     this.details = details;
   }
 }
@@ -25,7 +52,7 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const token = localStorage.getItem('scoprevo_jwt');
+  const token = localStorage.getItem(TOKEN_KEY);
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -37,16 +64,22 @@ async function request<T>(
   }
 
   const url = `${BASE_URL}${endpoint}`;
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
 
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+    });
+  } catch {
+    // Network-level failure (offline, DNS, CORS, etc.) — surface as a typed error.
+    throw new ApiError('NETWORK_ERROR', 'Unable to reach the server.', 0);
+  }
+
+  // Global 401 interceptor: clear token + hard redirect to /login.
   if (response.status === 401) {
-    localStorage.removeItem('scoprevo_jwt');
-    if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
-      window.location.href = '/login';
-    }
+    handleUnauthorized();
+    // Continue to parse and throw so the caller still sees a structured error.
   }
 
   let data: any;
@@ -62,7 +95,7 @@ async function request<T>(
     const code = errorBody.error?.code || 'UNKNOWN_ERROR';
     const message = errorBody.error?.message || response.statusText || 'An error occurred';
     const details = errorBody.error?.details;
-    throw new ApiError(code, message, details);
+    throw new ApiError(code, message, response.status, details);
   }
 
   return data as T;
@@ -116,7 +149,19 @@ export const apiClient = {
       request<{ batch: RevisionBatchDetail }>(`/batches/${id}`, {
         method: 'GET',
       }),
+    share: (id: string): Promise<ShareBatchResponse> =>
+      request<ShareBatchResponse>(`/batches/${id}/share`, {
+        method: 'PATCH',
+      }),
+  },
+  portal: {
+    getByToken: (token: string): Promise<PortalBatchResponse> =>
+      request<PortalBatchResponse>(`/portal/${token}`, {
+        method: 'GET',
+      }),
+    confirm: (token: string): Promise<void> =>
+      request<void>(`/portal/${token}/confirm`, {
+        method: 'POST',
+      }),
   },
 };
-
-export { ApiError };
