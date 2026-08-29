@@ -22,6 +22,18 @@ export const revisionController = {
     }
   },
 
+  async shareBatch(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const accountId = requireAccountId(req);
+      const { id } = req.params;
+
+      const batch = await revisionService.shareBatch(id, accountId);
+      res.status(200).json({ batch });
+    } catch (err) {
+      next(err);
+    }
+  },
+
   async getBatch(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const accountId = requireAccountId(req);

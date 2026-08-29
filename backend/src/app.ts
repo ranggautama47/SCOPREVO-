@@ -8,6 +8,7 @@ import projectRoutes from './routes/project.routes';
 import overviewRoutes from './routes/overview.routes';
 import revisionRoutes from './routes/revision.routes';
 import batchRoutes from './routes/batch.routes';
+import portalRoutes from './routes/portal.routes';
 const app = express();
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGINS, credentials: true }));
@@ -21,6 +22,7 @@ app.use('/api/projects', revisionRoutes);
 app.use('/projects', revisionRoutes);
 app.use('/api/batches', batchRoutes);
 app.use('/api/overview', overviewRoutes);
+app.use('/api/portal', portalRoutes);
 app.use((_req, res) => {
   res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found.' } });
 });

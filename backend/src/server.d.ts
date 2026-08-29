@@ -1,2 +1,8 @@
 export {};
-//# sourceMappingURL=server.d.ts.map
+declare global {
+  namespace Express {
+    interface Request {
+      accountId?: string;
+    }
+  }
+}

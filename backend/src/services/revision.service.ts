@@ -20,6 +20,7 @@ export interface RevisionBatchDetailDTO {
   id: string;
   projectId: string;
   status: 'DRAFT' | 'PENDING_CONFIRMATION' | 'APPROVED';
+  magicToken: string;
   summary: string | null;
   items: RevisionItemDTO[];
 }
@@ -36,6 +37,7 @@ function toBatchDetailDTO(batch: RevisionBatchRow, items: RevisionItemRow[]): Re
     id: batch.id,
     projectId: batch.project_id,
     status: batch.status,
+    magicToken: batch.magic_token,
     summary: batch.ai_summary,
     items: items.map((item) => ({
       id: item.id,
@@ -115,6 +117,70 @@ export const revisionService = {
     } finally {
       client.release();
     }
+  },
+
+  async shareBatch(batchId: string, accountId: string): Promise<{ id: string; status: RevisionBatchDetailDTO['status']; magicToken: string }> {
+    const batch = await revisionBatchRepository.findById(batchId);
+    if (!batch) {
+      throw new NotFoundError('Revision batch not found.');
+    }
+
+    const project = await projectRepository.findById(batch.project_id);
+    if (!project || project.account_id !== accountId) {
+      throw new NotFoundError('Revision batch not found.');
+    }
+
+    if (batch.status !== 'DRAFT') {
+      throw new ConflictError('INVALID_STATE', 'Batch is not in DRAFT status.');
+    }
+
+    const updatedBatch = await revisionBatchRepository.transitionStatus(
+      batchId,
+      'DRAFT',
+      'PENDING_CONFIRMATION',
+    );
+    if (!updatedBatch) {
+      const currentBatch = await revisionBatchRepository.findById(batchId);
+      if (currentBatch && currentBatch.status !== 'DRAFT') {
+        throw new ConflictError('INVALID_STATE', 'Batch is not in DRAFT status.');
+      }
+      throw new NotFoundError('Revision batch not found.');
+    }
+
+    return {
+      id: updatedBatch.id,
+      status: updatedBatch.status,
+      magicToken: updatedBatch.magic_token,
+    };
+  },
+
+  async confirmBatch(magicToken: string): Promise<{ id: string; status: RevisionBatchDetailDTO['status'] }> {
+    const batch = await revisionBatchRepository.findByMagicToken(magicToken);
+    if (!batch) {
+      throw new NotFoundError('Revision batch not found.');
+    }
+
+    if (batch.status !== 'PENDING_CONFIRMATION') {
+      throw new ConflictError('INVALID_STATE', 'Batch is not pending confirmation.');
+    }
+
+    const updatedBatch = await revisionBatchRepository.transitionStatus(
+      batch.id,
+      'PENDING_CONFIRMATION',
+      'APPROVED',
+    );
+    if (!updatedBatch) {
+      const currentBatch = await revisionBatchRepository.findByMagicToken(magicToken);
+      if (currentBatch && currentBatch.status !== 'PENDING_CONFIRMATION') {
+        throw new ConflictError('INVALID_STATE', 'Batch is not pending confirmation.');
+      }
+      throw new NotFoundError('Revision batch not found.');
+    }
+
+    return {
+      id: updatedBatch.id,
+      status: updatedBatch.status,
+    };
   },
 
   async getBatchDetail(batchId: string, accountId: string): Promise<RevisionBatchDetailDTO> {

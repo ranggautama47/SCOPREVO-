@@ -11,4 +11,9 @@ router.get(
   revisionController.getBatch,
 );
 
+router.patch(
+  '/:id/share',
+  revisionController.shareBatch,
+);
+
 export default router;

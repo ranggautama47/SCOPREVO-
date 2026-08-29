@@ -40,6 +40,15 @@ export const revisionBatchRepository = {
     return result.rows[0] ?? null;
   },
 
+  async findByMagicToken(magicToken: string): Promise<RevisionBatchRow | null> {
+    const result = await db.query<RevisionBatchRow>(
+      `SELECT id, project_id, raw_input, ai_summary, status, magic_token, created_at
+       FROM revision_batch WHERE magic_token = $1 LIMIT 1`,
+      [magicToken],
+    );
+    return result.rows[0] ?? null;
+  },
+
   async findAllByProjectId(projectId: string): Promise<RevisionBatchRow[]> {
     const result = await db.query<RevisionBatchRow>(
       `SELECT id, project_id, raw_input, ai_summary, status, magic_token, created_at
@@ -47,6 +56,20 @@ export const revisionBatchRepository = {
       [projectId],
     );
     return result.rows;
+  },
+
+  async transitionStatus(
+    batchId: string,
+    fromStatus: RevisionBatchRow['status'],
+    toStatus: RevisionBatchRow['status'],
+  ): Promise<RevisionBatchRow | null> {
+    const result = await db.query<RevisionBatchRow>(
+      `UPDATE revision_batch SET status = $1 WHERE id = $2
+       AND status = $3
+       RETURNING id, project_id, raw_input, ai_summary, status, magic_token, created_at`,
+      [toStatus, batchId, fromStatus],
+    );
+    return result.rows[0] ?? null;
   },
 };
 
