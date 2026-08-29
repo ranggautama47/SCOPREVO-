@@ -72,24 +72,40 @@ Ini belum pernah dijalankan sebelumnya — dua hal ini harus dikonfirmasi dulu s
 
 ---
 
-## Day 3 — Scope Detection & Quota
-- [ ] Klasifikasi tiga status: `IN_SCOPE`, `OUT_OF_SCOPE`, `NEEDS_REVIEW` (bukan cuma boolean — beri AI ruang untuk tidak yakin)
-- [ ] Setiap item OUT_OF_SCOPE dan NEEDS_REVIEW wajib punya `reason` (ditegakkan di DB via CHECK constraint, lihat DATABASE.md)
-- [ ] Hitung revision quota otomatis (used / allowed) tiap kali batch baru berstatus APPROVED
-- [ ] UI progress bar quota (2/3 used)
+## Day 3 — Scope Detection & Quota ✅ COMPLETE (2026-08-26)
+- [x] Klasifikasi tiga status: `IN_SCOPE`, `OUT_OF_SCOPE`, `NEEDS_REVIEW` (bukan cuma boolean — beri AI ruang untuk tidak yakin)
+- [x] Setiap item OUT_OF_SCOPE dan NEEDS_REVIEW wajib punya `reason` (ditegakkan di DB via CHECK constraint, lihat DATABASE.md)
+- [x] Hitung revision quota otomatis (used / allowed) tiap kali batch baru berstatus APPROVED
+- [x] UI progress bar quota (2/3 used)
 
-**Exit criteria:** submit feedback baru → quota counter TIDAK naik sampai batch di-APPROVE oleh klien; item ambigu masuk NEEDS_REVIEW bukan dipaksa IN/OUT.
+**Exit criteria:** submit feedback baru → quota counter TIDAK naik sampai batch di-APPROVE oleh klien; item ambigu masuk NEEDS_REVIEW bukan dipaksa IN/OUT. ✅ TERCAPAI
 
 **Kenapa NEEDS_REVIEW penting:** kalau AI salah klasifikasi item ambigu jadi IN_SCOPE secara percaya diri, itu terlihat "ngawur" di depan pembaca artikel/reviewer. Status ketiga ini bikin produk terasa lebih jujur dan profesional.
 
+**Bukti closure Day 3:**
+- Backend: 27/27 tests PASS (Day 3 logic) + 34/34 API readiness tests
+- Frontend: M3.1-M3.4 CLOSED, vue-tsc 0 errors
+- Scope classification: IN_SCOPE/OUT_OF_SCOPE/NEEDS_REVIEW badges rendered correctly
+- Reason enforcement: Reason box only renders for OUT_OF_SCOPE & NEEDS_REVIEW with non-empty reason
+- Quota logic: Quota DOES NOT consume on DRAFT submit; only on APPROVED (verified by Kimi QA)
+- Error handling: 401 interceptor, 409 QUOTA_EXHAUSTED, 422 AI_PROCESSING_FAILED, 500/504 with retry functionality
+- Empty states: Implemented for batches and items lists
 ---
 
-## Day 4 — Client Portal (Magic Link)
-- [ ] Generate token unik per RevisionBatch → `/portal/:token`
-- [ ] Halaman publik (tanpa login): tampilkan checklist, quota, badge IN/OUT/NEEDS_REVIEW
-- [ ] Tombol "Confirm Revision Scope" → update status batch jadi APPROVED
+## Day 4 — Client Portal (Magic Link) ✅ COMPLETE (2026-08-29)
+- [x] Generate token unik per RevisionBatch → `/portal/:token`
+- [x] Halaman publik (tanpa login): tampilkan checklist, quota, badge IN/OUT/NEEDS_REVIEW
+- [x] Tombol "Confirm Revision Scope" → update status batch jadi APPROVED
 
-**Exit criteria:** buka link di incognito tanpa login → checklist dan quota muncul dengan benar, tombol confirm berfungsi, dan quota di sisi freelancer langsung ter-update.
+**Exit criteria:** buka link di incognito tanpa login → checklist dan quota muncul dengan benar, tombol confirm berfungsi, dan quota di sisi freelancer langsung ter-update. ✅ TERCAPAI
+
+**Bukti closure Day 4 (Playwright E2E 13-Step PASS):**
+- M4.1 (Freelancer Share Action): Modal generate magic link, copy-to-clipboard, dan transisi status DRAFT → PENDING_CONFIRMATION berfungsi.
+- M4.2 (Client Portal View): Route publik `/portal/:token` render tanpa sidebar, menampilkan quota row, scope badges, dan tombol CONFIRM.
+- Backend B4: 3 endpoint portal (`PATCH /share`, `GET /portal/:token`, `POST /confirm`) live dan mematuhi error contract (409 INVALID_STATE, 404 NOT_FOUND).
+- Dynamic Quota: `usedRevisions` tetap 0 saat DRAFT, naik menjadi 1 secara otomatis pasca-APPROVED (tanpa optimistic UI di frontend).
+- Security: Cross-account isolation terbukti (Context C mendapat "Batch not found or access denied", bukan 403).
+- Idempotency: Double-click confirm ditangani dengan graceful re-fetch, banner APPROVED terkunci stabil.
 
 ---
 
