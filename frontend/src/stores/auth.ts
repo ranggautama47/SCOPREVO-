@@ -4,10 +4,23 @@ import { apiClient } from '../api/client';
 import type { UserAccount } from '../types/api';
 
 const TOKEN_KEY = 'scoprevo_jwt';
+const ACCOUNT_KEY = 'scoprevo_account';
+
+function readStoredAccount(): UserAccount | null {
+  const storedAccount = localStorage.getItem(ACCOUNT_KEY);
+  if (!storedAccount) return null;
+
+  try {
+    return JSON.parse(storedAccount) as UserAccount;
+  } catch {
+    localStorage.removeItem(ACCOUNT_KEY);
+    return null;
+  }
+}
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem(TOKEN_KEY));
-  const account = ref<UserAccount | null>(null);
+  const account = ref<UserAccount | null>(readStoredAccount());
   const isLoading = ref(false);
   const error = ref<string | null>(null);
 
@@ -18,10 +31,16 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem(TOKEN_KEY, newToken);
   }
 
+  function setAccount(newAccount: UserAccount) {
+    account.value = newAccount;
+    localStorage.setItem(ACCOUNT_KEY, JSON.stringify(newAccount));
+  }
+
   function clearToken() {
     token.value = null;
     account.value = null;
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(ACCOUNT_KEY);
   }
 
   async function login(email: string, password: string) {
@@ -30,7 +49,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await apiClient.auth.login({ email, password });
       setToken(response.token);
-      account.value = response.account;
+      setAccount(response.account);
       return response;
     } catch (err: any) {
       error.value = err.message || 'Login failed';
@@ -46,7 +65,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await apiClient.auth.register({ name, email, password });
       setToken(response.token);
-      account.value = response.account;
+      setAccount(response.account);
       return response;
     } catch (err: any) {
       error.value = err.message || 'Registration failed';
