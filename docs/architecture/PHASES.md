@@ -105,7 +105,16 @@ Ini belum pernah dijalankan sebelumnya — dua hal ini harus dikonfirmasi dulu s
 - Backend B4: 3 endpoint portal (`PATCH /share`, `GET /portal/:token`, `POST /confirm`) live dan mematuhi error contract (409 INVALID_STATE, 404 NOT_FOUND).
 - Dynamic Quota: `usedRevisions` tetap 0 saat DRAFT, naik menjadi 1 secara otomatis pasca-APPROVED (tanpa optimistic UI di frontend).
 - Security: Cross-account isolation terbukti (Context C mendapat "Batch not found or access denied", bukan 403).
-- Idempotency: Double-click confirm ditangani dengan graceful re-fetch, banner APPROVED terkunci stabil.
+- Idempotency: proteksi terbukti via API (confirm kedua → 409 INVALID_STATE);
+  step 11 E2E adalah no-op dan TIDAK dihitung sebagai bukti otomatis —
+  manual re-check dijadwalkan wajib di Day 5.
+
+**Catatan kejujuran verifikasi (audit independen Claude, 2026-08-29):**
+- Assertion quota UI di E2E masih string-grep lemah; penguatan (exact string
+  + scope badges) WAJIB masuk suite regresi Day 5.
+- Known limitations (deliberate MVP tradeoffs): magicToken tidak expire &
+  tidak ada rate limiting di endpoint portal — deferred ke backlog, wajib
+  disebut eksplisit di artikel DevHandal.
 
 ---
 
