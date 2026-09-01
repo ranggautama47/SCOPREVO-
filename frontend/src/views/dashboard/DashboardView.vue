@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from "vue";
 import { useRouter } from "vue-router";
+import { useAuthStore } from "../../stores/auth";
 import { apiClient } from "../../api/client";
 import type { OverviewData, Project } from "../../types/api";
 import {
@@ -9,17 +10,24 @@ import {
   Hourglass,
   AlertCircle,
   Bell,
-  ExternalLink,
   User,
   Calendar,
+  ExternalLink,
+  FolderX,
 } from "lucide-vue-next";
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 const overviewData = ref<OverviewData | null>(null);
 const projects = ref<Project[]>([]);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
+
+// Ambil 3 proyek terbaru dari array `projects` yang memiliki field quota lengkap (PM Approved)
+const recentProjectsWithQuota = computed(() => {
+  return projects.value.slice(0, 3);
+});
 
 const totalAllowedRevisions = computed(() => {
   return projects.value.reduce(
@@ -55,6 +63,10 @@ function navigateToProject(id: string) {
   router.push(`/projects/${id}`);
 }
 
+function navigateToBatch(id: string) {
+  router.push(`/batches/${id}`);
+}
+
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("id-ID", {
     day: "numeric",
@@ -63,29 +75,38 @@ function formatDate(dateStr: string): string {
   });
 }
 
+function formatFullDate(date: Date = new Date()): string {
+  return date.toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
 onMounted(() => {
   fetchDashboardData();
 });
 </script>
 
 <template>
-  <section class="p-6 md:p-10 max-w-[1300px] mx-auto">
-    <!-- Top Bar: Interactive Breadcrumb & Actions (Stitch Style) -->
-    <div class="flex items-center justify-between mb-4">
-      <nav
-        aria-label="Breadcrumb"
-        class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wider text-[#1A1A1A]/70 flex items-center"
-      >
+  <section class="p-6 md:p-10 max-w-[1300px] mx-auto min-h-screen bg-[#FAFAF9]">
+    <!-- TOP BAR -->
+    <div class="flex items-center justify-between mb-6">
+      <nav aria-label="Breadcrumb">
         <router-link
           to="/dashboard"
-          class="hover:text-[#1A1A1A] hover:underline decoration-[#DCCCFF] decoration-2 underline-offset-4 transition-all"
+          class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-wider text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:underline decoration-[#DCCCFF] decoration-2 underline-offset-4 transition-all"
         >
           WORKSPACE
         </router-link>
-        <span class="mx-2 text-[#1A1A1A]/40 font-bold">&gt;</span>
-        <span class="font-bold text-[#1A1A1A]" aria-current="page"
-          >OVERVIEW</span
-        >
       </nav>
 
       <div class="flex items-center gap-2">
@@ -104,7 +125,21 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Page Title -->
+    <!-- GREETING + DATE -->
+    <div class="mb-8">
+      <p
+        class="font-['Baskervville',serif] text-3xl md:text-4xl font-normal leading-[1.2] text-[#1A1A1A]"
+      >
+        {{ getGreeting() }}, {{ authStore.account?.name || "User" }}
+      </p>
+      <p
+        class="font-['Noto_Serif',serif] text-sm md:text-base leading-[1.6] text-[#1A1A1A]/60 mt-1"
+      >
+        {{ formatFullDate() }}
+      </p>
+    </div>
+
+    <!-- PAGE TITLE -->
     <div class="border-b-2 border-[#1A1A1A] pb-6 mb-8">
       <h1
         class="font-['Baskervville',serif] text-4xl md:text-5xl font-normal leading-[1.1] tracking-tight text-[#1A1A1A]"
@@ -135,13 +170,13 @@ onMounted(() => {
       {{ error }}
     </div>
 
-    <!-- Main Content Grid -->
-    <div v-else class="space-y-8">
-      <!-- 4 Stat Cards Grid -->
+    <!-- Main Content -->
+    <div v-else class="space-y-10">
+      <!-- FOUR KPI CARDS -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-        <!-- Card 1: ACTIVE PROJECTS (Canvas bg) -->
+        <!-- Card 1: ACTIVE PROJECTS -->
         <div
-          class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-6 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] relative hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all"
+          class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-6 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all"
         >
           <div class="flex justify-between items-start">
             <p
@@ -151,14 +186,16 @@ onMounted(() => {
             </p>
             <FolderKanban class="w-4 h-4 text-[#1A1A1A]/70" />
           </div>
-          <p class="font-['JetBrains_Mono',monospace] text-4xl font-bold mt-4">
+          <p
+            class="font-['JetBrains_Mono',monospace] text-4xl font-bold mt-4 text-[#1A1A1A]"
+          >
             {{ overviewData?.activeProjects ?? 0 }}
           </p>
         </div>
 
-        <!-- Card 2: REVISIONS USED (Yellow bg) -->
+        <!-- Card 2: REVISIONS USED -->
         <div
-          class="bg-[#FDFFB6] border-2 border-[#1A1A1A] p-6 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] relative hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all"
+          class="bg-[#FDFFB6] border-2 border-[#1A1A1A] p-6 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all"
         >
           <div class="flex justify-between items-start">
             <p
@@ -168,13 +205,14 @@ onMounted(() => {
             </p>
             <History class="w-4 h-4 text-[#1A1A1A]/70" />
           </div>
-          <p class="font-['JetBrains_Mono',monospace] text-4xl font-bold mt-4">
+          <p
+            class="font-['JetBrains_Mono',monospace] text-4xl font-bold mt-4 text-[#1A1A1A]"
+          >
             {{ overviewData?.revisionsUsed ?? 0 }}
             <span class="text-xl font-normal text-[#1A1A1A]/60">
               /{{ totalAllowedRevisions }}
             </span>
           </p>
-          <!-- Brutalist Progress Bar -->
           <div
             class="mt-3 w-full h-2 bg-[#FAFAF9] border-2 border-[#1A1A1A] rounded-none overflow-hidden"
           >
@@ -193,9 +231,9 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Card 3: REVISIONS LEFT (Canvas bg) -->
+        <!-- Card 3: REVISIONS LEFT -->
         <div
-          class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-6 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] relative hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all"
+          class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-6 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all"
         >
           <div class="flex justify-between items-start">
             <p
@@ -205,14 +243,16 @@ onMounted(() => {
             </p>
             <Hourglass class="w-4 h-4 text-[#1A1A1A]/70" />
           </div>
-          <p class="font-['JetBrains_Mono',monospace] text-4xl font-bold mt-4">
+          <p
+            class="font-['JetBrains_Mono',monospace] text-4xl font-bold mt-4 text-[#1A1A1A]"
+          >
             {{ revisionsLeft }}
           </p>
         </div>
 
-        <!-- Card 4: PENDING REVIEW (Lavender bg) -->
+        <!-- Card 4: PENDING REVIEW -->
         <div
-          class="bg-[#DCCCFF] border-2 border-[#1A1A1A] p-6 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] relative hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all"
+          class="bg-[#DCCCFF] border-2 border-[#1A1A1A] p-6 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all"
         >
           <div class="flex justify-between items-start">
             <p
@@ -222,13 +262,15 @@ onMounted(() => {
             </p>
             <AlertCircle class="w-4 h-4 text-[#E63946]" />
           </div>
-          <p class="font-['JetBrains_Mono',monospace] text-4xl font-bold mt-4">
+          <p
+            class="font-['JetBrains_Mono',monospace] text-4xl font-bold mt-4 text-[#1A1A1A]"
+          >
             {{ overviewData?.pendingConfirmations ?? 0 }}
           </p>
         </div>
       </div>
 
-      <!-- Recent Projects Section -->
+      <!-- RECENT PROJECTS -->
       <div>
         <div class="flex items-center justify-between mb-4">
           <h2
@@ -247,16 +289,15 @@ onMounted(() => {
 
         <!-- Empty State -->
         <div
-          v-if="overviewData?.recentProjects.length === 0"
+          v-if="recentProjectsWithQuota.length === 0"
           class="bg-[#FAFAF9] border-2 border-dashed border-[#1A1A1A]/30 p-12 rounded-none text-center flex flex-col items-center justify-center"
         >
-          <img
-            src="/src/assets/project.png"
-            alt="No projects illustration"
-            class="w-32 h-32 md:w-40 md:h-40 object-contain select-none pointer-events-none opacity-70"
-            draggable="false"
-          />
-          <p class="font-['Baskervville',serif] text-xl text-[#1A1A1A]/60 mt-4">
+          <div
+            class="bg-[#FDFFB6] border-2 border-[#1A1A1A] p-3 mb-4 shadow-[3px_3px_0px_0px_#1A1A1A] -rotate-2"
+          >
+            <FolderX class="w-8 h-8 text-[#1A1A1A]" />
+          </div>
+          <p class="font-['Baskervville',serif] text-xl text-[#1A1A1A]/60">
             No recent projects
           </p>
           <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]/40 mt-2">
@@ -264,53 +305,189 @@ onMounted(() => {
           </p>
         </div>
 
-        <!-- Projects Grid (Polished & Interactive) -->
+        <!-- Projects Grid (Mengambil data dari recentProjectsWithQuota agar Progress Bar Akurat) -->
         <div
           v-else
           class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
         >
           <div
-            v-for="project in overviewData?.recentProjects"
+            v-for="project in recentProjectsWithQuota"
             :key="project.id"
             @click="navigateToProject(project.id)"
-            class="group bg-[#FAFAF9] border-2 border-[#1A1A1A] p-5 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all duration-150 ease-out cursor-pointer flex flex-col justify-between min-h-[160px]"
+            class="group bg-[#FAFAF9] border-2 border-[#1A1A1A] p-5 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all duration-150 ease-out cursor-pointer flex flex-col justify-between min-h-[180px]"
           >
-            <!-- Card Header: Badge & Hover Icon -->
-            <div className="flex justify-between items-start mb-3">
-              <span
-                className="bg-[#FDFFB6] text-[#1A1A1A] border-2 border-[#1A1A1A] px-2 py-0.5 font-['JetBrains_Mono',monospace] text-[10px] uppercase font-bold tracking-wider"
-              >
-                ACTIVE
-              </span>
+            <div>
+              <div class="flex justify-between items-start mb-3">
+                <span
+                  class="bg-[#DCFCE7] text-[#166534] border-2 border-[#1A1A1A] px-2 py-0.5 font-['JetBrains_Mono',monospace] text-[10px] uppercase font-bold tracking-wider"
+                >
+                  ACTIVE
+                </span>
+                <ExternalLink
+                  class="w-4 h-4 text-[#1A1A1A] opacity-60 group-hover:opacity-100 transition-opacity duration-150"
+                />
+              </div>
 
-              <ExternalLink className="w-4 h-4 text-[#1A1A1A] opacity-100" />
+              <div>
+                <h3
+                  class="font-['Baskervville',serif] text-xl font-normal leading-[1.3] text-[#1A1A1A] line-clamp-1"
+                >
+                  {{ project.name }}
+                </h3>
+                <p
+                  class="font-['Noto_Serif',serif] text-sm leading-[1.5] text-[#1A1A1A]/60 mt-1 line-clamp-1"
+                >
+                  {{ project.clientName }}
+                </p>
+              </div>
             </div>
 
-            <!-- Card Body: Title & Client -->
-            <div class="flex-1">
-              <h3
-                class="font-['Baskervville',serif] text-xl font-normal leading-[1.3] text-[#1A1A1A] line-clamp-1"
+            <!-- Progress Bar Kuota Proyek (Data Valid) -->
+            <div class="mt-4">
+              <div class="mb-3">
+                <div class="flex justify-between items-end mb-1">
+                  <span
+                    class="font-['JetBrains_Mono',monospace] text-[10px] font-bold text-[#1A1A1A] uppercase"
+                  >
+                    Quota
+                  </span>
+                  <span
+                    class="font-['JetBrains_Mono',monospace] text-[10px] text-[#1A1A1A]/70"
+                  >
+                    {{ project.usedRevisions ?? 0 }} /
+                    {{ project.totalAllowedRevisions ?? 0 }} used
+                  </span>
+                </div>
+                <div
+                  class="w-full h-1.5 bg-[#FAFAF9] border-[1.5px] border-[#1A1A1A] rounded-none overflow-hidden"
+                >
+                  <div
+                    class="h-full bg-[#006D77] transition-all duration-300 ease-out"
+                    :style="{
+                      width:
+                        Math.min(
+                          ((project.usedRevisions ?? 0) /
+                            (project.totalAllowedRevisions || 1)) *
+                            100,
+                          100,
+                        ) + '%',
+                    }"
+                  ></div>
+                </div>
+              </div>
+
+              <div
+                class="pt-2 border-t-2 border-dashed border-[#1A1A1A]/20 flex justify-between items-center"
               >
-                {{ project.name }}
-              </h3>
-              <p
-                class="font-['Noto_Serif',serif] text-sm leading-[1.5] text-[#1A1A1A]/60 mt-1 line-clamp-2"
+                <span
+                  class="font-['JetBrains_Mono',monospace] text-[11px] text-[#1A1A1A]/50 uppercase tracking-wide flex items-center gap-1.5"
+                >
+                  <Calendar class="w-3 h-3 text-[#1A1A1A]/50" />
+                  {{ formatDate(project.createdAt) }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECENT REVISION BATCHES -->
+      <div>
+        <div class="flex items-center justify-between mb-4">
+          <h2
+            class="font-['Baskervville',serif] text-2xl font-normal leading-[1.3] text-[#1A1A1A]"
+          >
+            Recent Revision Batches
+          </h2>
+          <router-link
+            to="/revisions"
+            class="font-['Inter',sans-serif] text-sm font-medium text-[#1A1A1A] hover:underline hover:decoration-[#DCCCFF] hover:decoration-2 underline-offset-2 flex items-center gap-1"
+          >
+            <span>View All</span>
+            <span class="font-mono text-xs">&rarr;</span>
+          </router-link>
+        </div>
+
+        <!-- Empty State -->
+        <div
+          v-if="!overviewData?.recentBatches?.length"
+          class="bg-[#FAFAF9] border-2 border-dashed border-[#1A1A1A]/30 p-10 rounded-none text-center flex flex-col items-center justify-center"
+        >
+          <img
+            src="/src/assets/Revision.png"
+            alt="No revision batches illustration"
+            class="w-28 h-28 md:w-36 md:h-36 object-contain select-none pointer-events-none mb-4 opacity-70"
+            draggable="false"
+          />
+
+          <p class="font-['Baskervville',serif] text-xl text-[#1A1A1A]/70">
+            No revision batches available yet.
+          </p>
+          <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]/50 mt-1">
+            Revision batch activity will appear here when available.
+          </p>
+        </div>
+
+        <!-- Recent Revision Batches List (Layout Persis Pilihanmu) -->
+        <div v-else class="space-y-4">
+          <div
+            v-for="(batch, index) in overviewData?.recentBatches"
+            :key="batch.id"
+            @click="navigateToBatch(batch.id)"
+            class="group bg-[#FAFAF9] border-2 border-[#1A1A1A] p-5 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all duration-150 ease-out cursor-pointer flex flex-col gap-3"
+          >
+            <!-- Baris Atas: ID, Badge, Items, dan Tanggal -->
+            <div class="flex justify-between items-start w-full">
+              <div class="flex items-center gap-3 flex-wrap">
+                <!-- Batch ID (Format #001) -->
+                <span
+                  class="font-['JetBrains_Mono',monospace] text-xs font-bold text-[#1A1A1A]"
+                >
+                  #{{
+                    String(batch.id).replace("batch-", "").padStart(3, "0") ||
+                    "00" + (4 - index)
+                  }}
+                </span>
+
+                <!-- Status Badge (Warna Semantik Pilihanmu) -->
+                <span
+                  :class="{
+                    'bg-[#DCFCE7] text-[#166534]':
+                      String(batch.status) === 'APPROVED',
+                    'bg-[#DCCCFF] text-[#1A1A1A]':
+                      String(batch.status) === 'PENDING_CONFIRMATION',
+                    'bg-[#E5E7EB] text-[#1A1A1A]':
+                      String(batch.status) === 'DRAFT',
+                    'bg-[#FDE68A] text-[#92400E]':
+                      String(batch.status) === 'NEEDS_REVIEW',
+                  }"
+                  class="border-2 border-[#1A1A1A] px-2 py-0.5 font-['JetBrains_Mono',monospace] text-[10px] uppercase font-bold tracking-wider rounded-none"
+                >
+                  {{ batch.status }}
+                </span>
+
+                <!-- Item Count -->
+                <span
+                  class="font-['JetBrains_Mono',monospace] text-xs text-[#1A1A1A]/50"
+                >
+                  • {{ batch.itemCount }} items
+                </span>
+              </div>
+
+              <!-- Tanggal di pojok kanan -->
+              <div
+                class="font-['JetBrains_Mono',monospace] text-xs text-[#1A1A1A]/50"
               >
-                {{ project.clientName }}
-              </p>
+                {{ formatDate(batch.createdAt) }}
+              </div>
             </div>
 
-            <!-- Card Footer: Dashed Line & Date -->
-            <div
-              class="mt-4 pt-3 border-t-2 border-dashed border-[#1A1A1A]/20 flex justify-between items-center"
+            <!-- Baris Bawah: Nama Project -->
+            <h3
+              class="font-['Baskervville',serif] text-xl font-normal leading-[1.3] text-[#1A1A1A]"
             >
-              <span
-                class="font-['JetBrains_Mono',monospace] text-[11px] text-[#1A1A1A]/50 uppercase tracking-wide flex items-center gap-1.5"
-              >
-                <Calendar class="w-3 h-3 text-[#1A1A1A]/50" />
-                {{ formatDate(project.createdAt) }}
-              </span>
-            </div>
+              {{ batch.projectName }}
+            </h3>
           </div>
         </div>
       </div>

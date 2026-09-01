@@ -68,6 +68,14 @@ export interface OverviewData {
     clientName: string;
     createdAt: string;
   }[];
+  recentBatches: {
+    id: string;
+    projectId: string;
+    projectName: string;
+    status: RevisionBatchStatus;
+    createdAt: string;
+    itemCount: number;
+  }[];
 }
 
 export interface ApiErrorResponse {
