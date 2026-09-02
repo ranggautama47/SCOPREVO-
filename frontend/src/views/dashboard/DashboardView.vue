@@ -13,7 +13,6 @@ import {
   User,
   Calendar,
   ExternalLink,
-  FolderX,
 } from "lucide-vue-next";
 
 const router = useRouter();
@@ -89,6 +88,11 @@ function getGreeting(): string {
   if (hour < 12) return "Good morning";
   if (hour < 18) return "Good afternoon";
   return "Good evening";
+}
+
+function getClientName(projectId: string): string {
+  const project = projects.value.find((p) => p.id === projectId);
+  return project?.clientName || "";
 }
 
 onMounted(() => {
@@ -292,11 +296,12 @@ onMounted(() => {
           v-if="recentProjectsWithQuota.length === 0"
           class="bg-[#FAFAF9] border-2 border-dashed border-[#1A1A1A]/30 p-12 rounded-none text-center flex flex-col items-center justify-center"
         >
-          <div
-            class="bg-[#FDFFB6] border-2 border-[#1A1A1A] p-3 mb-4 shadow-[3px_3px_0px_0px_#1A1A1A] -rotate-2"
-          >
-            <FolderX class="w-8 h-8 text-[#1A1A1A]" />
-          </div>
+          <img
+            src="/src/assets/project.png"
+            alt="No projects illustration"
+            class="w-32 h-32 md:w-40 md:h-40 object-contain select-none pointer-events-none opacity-70"
+            draggable="false"
+          />
           <p class="font-['Baskervville',serif] text-xl text-[#1A1A1A]/60">
             No recent projects
           </p>
@@ -419,7 +424,6 @@ onMounted(() => {
             class="w-28 h-28 md:w-36 md:h-36 object-contain select-none pointer-events-none mb-4 opacity-70"
             draggable="false"
           />
-
           <p class="font-['Baskervville',serif] text-xl text-[#1A1A1A]/70">
             No revision batches available yet.
           </p>
@@ -428,18 +432,18 @@ onMounted(() => {
           </p>
         </div>
 
-        <!-- Recent Revision Batches List (Layout Persis Pilihanmu) -->
+        <!-- Recent Revision Batches List -->
         <div v-else class="space-y-4">
           <div
             v-for="(batch, index) in overviewData?.recentBatches"
             :key="batch.id"
             @click="navigateToBatch(batch.id)"
-            class="group bg-[#FAFAF9] border-2 border-[#1A1A1A] p-5 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all duration-150 ease-out cursor-pointer flex flex-col gap-3"
+            class="group bg-[#FAFAF9] border-2 border-[#1A1A1A] p-5 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all duration-150 ease-out cursor-pointer"
           >
-            <!-- Baris Atas: ID, Badge, Items, dan Tanggal -->
-            <div class="flex justify-between items-start w-full">
+            <!-- Baris 1: ID + Status + Items (kiri) dan Tanggal (kanan) -->
+            <div class="flex justify-between items-start w-full mb-3">
               <div class="flex items-center gap-3 flex-wrap">
-                <!-- Batch ID (Format #001) -->
+                <!-- Batch ID -->
                 <span
                   class="font-['JetBrains_Mono',monospace] text-xs font-bold text-[#1A1A1A]"
                 >
@@ -449,7 +453,7 @@ onMounted(() => {
                   }}
                 </span>
 
-                <!-- Status Badge (Warna Semantik Pilihanmu) -->
+                <!-- Status Badge -->
                 <span
                   :class="{
                     'bg-[#DCFCE7] text-[#166534]':
@@ -474,7 +478,7 @@ onMounted(() => {
                 </span>
               </div>
 
-              <!-- Tanggal di pojok kanan -->
+              <!-- Tanggal (pojok kanan) -->
               <div
                 class="font-['JetBrains_Mono',monospace] text-xs text-[#1A1A1A]/50"
               >
@@ -482,12 +486,23 @@ onMounted(() => {
               </div>
             </div>
 
-            <!-- Baris Bawah: Nama Project -->
+            <!-- Baris 2: Nama Project -->
             <h3
               class="font-['Baskervville',serif] text-xl font-normal leading-[1.3] text-[#1A1A1A]"
             >
               {{ batch.projectName }}
             </h3>
+
+            <!-- Baris 3: Client Name (warna teal #006D77) -->
+            <div
+              class="flex justify-end items-center mt-3 border-t border-[#1A1A1A]/10 pt-3"
+            >
+              <span
+                class="font-['Noto_Serif',serif] text-sm font-semibold text-[#ff002b] bg-[#FDFFB6] px-2 py-0.5 border border-[#ff002b]/20 rounded-none inline-block"
+              >
+                {{ getClientName(batch.projectId) }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
