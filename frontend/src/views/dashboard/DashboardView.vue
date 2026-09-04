@@ -9,11 +9,11 @@ import {
   History,
   Hourglass,
   AlertCircle,
-  Bell,
-  User,
   Calendar,
   ExternalLink,
 } from "lucide-vue-next";
+import UiStatusBadge from "../../components/ui/UiStatusBadge.vue";
+import AppTopbar from "../../components/features/AppTopbar.vue";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -23,9 +23,24 @@ const projects = ref<Project[]>([]);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
 
-// Ambil 3 proyek terbaru dari array `projects` yang memiliki field quota lengkap (PM Approved)
+// Ambil proyek terbaru (max 6) dari array `projects` yang memiliki field quota lengkap (PM Approved)
 const recentProjectsWithQuota = computed(() => {
-  return projects.value.slice(0, 3);
+  return projects.value.slice(0, 6);
+});
+
+const BATCHES_PER_PAGE = 5;
+const currentBatchPage = ref(1);
+
+const totalBatchPages = computed(() => {
+  const total = overviewData.value?.recentBatches?.length ?? 0;
+  return total > BATCHES_PER_PAGE ? Math.ceil(total / BATCHES_PER_PAGE) : 0;
+});
+
+const paginatedBatches = computed(() => {
+  const all = overviewData.value?.recentBatches ?? [];
+  if (all.length <= BATCHES_PER_PAGE) return all;
+  const start = (currentBatchPage.value - 1) * BATCHES_PER_PAGE;
+  return all.slice(start, start + BATCHES_PER_PAGE);
 });
 
 const totalAllowedRevisions = computed(() => {
@@ -103,45 +118,35 @@ onMounted(() => {
 <template>
   <section class="p-6 md:p-10 max-w-[1300px] mx-auto min-h-screen bg-[#FAFAF9]">
     <!-- TOP BAR -->
-    <div class="flex items-center justify-between mb-6">
-      <nav aria-label="Breadcrumb">
-        <router-link
-          to="/dashboard"
-          class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-wider text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:underline decoration-[#DCCCFF] decoration-2 underline-offset-4 transition-all"
-        >
-          WORKSPACE
-        </router-link>
-      </nav>
-
-      <div class="flex items-center gap-2">
-        <button
-          title="Notifications"
-          class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-2 rounded-none shadow-[2px_2px_0px_0px_#1A1A1A] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
-        >
-          <Bell class="w-4 h-4 text-[#1A1A1A]" />
-        </button>
-        <button
-          title="User Profile"
-          class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-2 rounded-none shadow-[2px_2px_0px_0px_#1A1A1A] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
-        >
-          <User class="w-4 h-4 text-[#1A1A1A]" />
-        </button>
-      </div>
-    </div>
-
-    <!-- GREETING + DATE -->
-    <div class="mb-8">
-      <p
-        class="font-['Baskervville',serif] text-3xl md:text-4xl font-normal leading-[1.2] text-[#1A1A1A]"
+<div class="flex items-center justify-between mb-6">
+  <div class="flex items-center gap-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="Breadcrumb">
+      <router-link
+        to="/dashboard"
+        class="font-['JetBrains_Mono',monospace] text-lg font-bold uppercase tracking-wider text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:underline decoration-[#DCCCFF] decoration-2 underline-offset-4 transition-all"
       >
+        WORKSPACE
+      </router-link>
+    </nav>
+
+    <!-- Pemisah -->
+    <div class="border-l-2 border-[#1A1A1A]/20 h-6"></div>
+
+    <!-- Greeting + Date (di samping WORKSPACE) -->
+    <div class="hidden md:block">
+      <p class="font-['Baskervville',serif] text-lg font-normal text-[#1A1A1A] leading-tight">
         {{ getGreeting() }}, {{ authStore.account?.name || "User" }}
       </p>
-      <p
-        class="font-['Noto_Serif',serif] text-sm md:text-base leading-[1.6] text-[#1A1A1A]/60 mt-1"
-      >
+      <p class="font-['Noto_Serif',serif] text-lg text-[#1A1A1A] leading-tight">
         {{ formatFullDate() }}
       </p>
     </div>
+  </div>
+
+  <!-- AppTopbar -->
+  <AppTopbar />
+</div>
 
     <!-- PAGE TITLE -->
     <div class="border-b-2 border-[#1A1A1A] pb-6 mb-8">
@@ -404,13 +409,12 @@ onMounted(() => {
           >
             Recent Revision Batches
           </h2>
-          <router-link
-            to="/revisions"
-            class="font-['Inter',sans-serif] text-sm font-medium text-[#1A1A1A] hover:underline hover:decoration-[#DCCCFF] hover:decoration-2 underline-offset-2 flex items-center gap-1"
+          <span
+            v-if="overviewData?.recentBatches?.length"
+            class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-wider text-[#1A1A1A]/70"
           >
-            <span>View All</span>
-            <span class="font-mono text-xs">&rarr;</span>
-          </router-link>
+            {{ overviewData.recentBatches.length }} BATCHES
+          </span>
         </div>
 
         <!-- Empty State -->
@@ -435,7 +439,7 @@ onMounted(() => {
         <!-- Recent Revision Batches List -->
         <div v-else class="space-y-4">
           <div
-            v-for="(batch, index) in overviewData?.recentBatches"
+            v-for="batch in paginatedBatches"
             :key="batch.id"
             @click="navigateToBatch(batch.id)"
             class="group bg-[#FAFAF9] border-2 border-[#1A1A1A] p-5 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all duration-150 ease-out cursor-pointer"
@@ -447,28 +451,11 @@ onMounted(() => {
                 <span
                   class="font-['JetBrains_Mono',monospace] text-xs font-bold text-[#1A1A1A]"
                 >
-                  #{{
-                    String(batch.id).replace("batch-", "").padStart(3, "0") ||
-                    "00" + (4 - index)
-                  }}
+                  #{{ batch.id.slice(0, 8) }}
                 </span>
 
                 <!-- Status Badge -->
-                <span
-                  :class="{
-                    'bg-[#DCFCE7] text-[#166534]':
-                      String(batch.status) === 'APPROVED',
-                    'bg-[#DCCCFF] text-[#1A1A1A]':
-                      String(batch.status) === 'PENDING_CONFIRMATION',
-                    'bg-[#E5E7EB] text-[#1A1A1A]':
-                      String(batch.status) === 'DRAFT',
-                    'bg-[#FDE68A] text-[#92400E]':
-                      String(batch.status) === 'NEEDS_REVIEW',
-                  }"
-                  class="border-2 border-[#1A1A1A] px-2 py-0.5 font-['JetBrains_Mono',monospace] text-[10px] uppercase font-bold tracking-wider rounded-none"
-                >
-                  {{ batch.status }}
-                </span>
+                <UiStatusBadge :status="batch.status" kind="batch" size="sm" />
 
                 <!-- Item Count -->
                 <span
@@ -493,17 +480,54 @@ onMounted(() => {
               {{ batch.projectName }}
             </h3>
 
-            <!-- Baris 3: Client Name (warna teal #006D77) -->
+            <!-- Baris 3: Client Name (Background Kuning & Border Hitam) -->
             <div
               class="flex justify-end items-center mt-3 border-t border-[#1A1A1A]/10 pt-3"
             >
               <span
-                class="font-['Noto_Serif',serif] text-sm font-semibold text-[#ff002b] bg-[#FDFFB6] px-2 py-0.5 border border-[#ff002b]/20 rounded-none inline-block"
+                 class="font-['Noto_Serif',serif] text-sm font-semibold text-[#ff002b] bg-[#FDFFB6] px-2 py-0.5 border border-[#ff002b]/20 rounded-none inline-block"
               >
                 {{ getClientName(batch.projectId) }}
               </span>
             </div>
           </div>
+
+          <!-- Pagination (Local — muncul hanya jika total batches > 5) -->
+          <nav
+            v-if="totalBatchPages > 1"
+            class="flex items-center justify-center gap-2 pt-2"
+            aria-label="Revision batches pagination"
+          >
+            <button
+              type="button"
+              @click="currentBatchPage = Math.max(1, currentBatchPage - 1)"
+              :disabled="currentBatchPage === 1"
+              class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase border-2 border-[#1A1A1A] rounded-none bg-[#FAFAF9] text-[#1A1A1A] px-3 py-1.5 shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#DCCCFF] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              &larr; PREV
+            </button>
+
+            <button
+              v-for="page in totalBatchPages"
+              :key="page"
+              type="button"
+              @click="currentBatchPage = page"
+              :class="currentBatchPage === page
+                ? 'font-[\'JetBrains_Mono\',monospace] text-xs font-bold uppercase border-2 border-[#1A1A1A] rounded-none px-3 py-1.5 bg-[#1A1A1A] text-[#FAFAF9] shadow-[2px_2px_0px_0px_#1A1A1A]'
+                : 'font-[\'JetBrains_Mono\',monospace] text-xs font-bold uppercase border-2 border-[#1A1A1A] rounded-none px-3 py-1.5 bg-[#FAFAF9] text-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#DCCCFF] transition-colors'"
+            >
+              {{ page }}
+            </button>
+
+            <button
+              type="button"
+              @click="currentBatchPage = Math.min(totalBatchPages, currentBatchPage + 1)"
+              :disabled="currentBatchPage === totalBatchPages"
+              class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase border-2 border-[#1A1A1A] rounded-none bg-[#FAFAF9] text-[#1A1A1A] px-3 py-1.5 shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#DCCCFF] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              NEXT &rarr;
+            </button>
+          </nav>
         </div>
       </div>
     </div>
