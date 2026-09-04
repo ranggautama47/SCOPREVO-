@@ -144,7 +144,7 @@ function isActive(path: string): boolean {
       </nav>
 
       <!-- Primary CTA at bottom (+ NEW PROJECT) -->
-      <div class="p-4 border-t-2 border-nearBlack bg-sage">
+      <div class="p-4  bg-sage">
         <router-link
           to="/projects"
           class="w-full block bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-4 py-3 font-ui text-xs uppercase font-semibold tracking-wider shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none text-center transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A]"
