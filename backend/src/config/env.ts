@@ -22,4 +22,6 @@ export const env = {
   FALLBACK_LLM_BASE_URL: process.env.FALLBACK_LLM_BASE_URL ?? 'https://openrouter.ai/api/v1',
   FALLBACK_LLM_API_KEY: process.env.FALLBACK_LLM_API_KEY ?? '',
   FALLBACK_LLM_MODEL: process.env.FALLBACK_LLM_MODEL ?? '',
+  SUPABASE_URL: process.env.SUPABASE_URL ?? '',
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
 } as const;

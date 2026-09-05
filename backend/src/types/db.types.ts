@@ -34,3 +34,17 @@ export interface RevisionItemRow {
   reason: string | null;
   is_completed: boolean;
 }
+
+export interface ProjectDocumentRow {
+  id: string;
+  project_id: string;
+  filename: string;
+  mime_type: string;
+  size_bytes: number;
+  storage_path: string;
+  extracted_text: string | null;
+  extraction_status: 'pending' | 'completed' | 'failed';
+  extraction_error: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
