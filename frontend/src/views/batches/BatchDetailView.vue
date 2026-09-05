@@ -341,8 +341,8 @@ watch(
 
         <!-- PENDING_CONFIRMATION → VIEW PORTAL -->
         <button
-          v-else-if="batchData.status === 'PENDING_CONFIRMATION' && batchData.magicToken"
-          @click="router.push(`/portal/${batchData.magicToken}`)"
+          v-else-if="batchData.status === 'PENDING_CONFIRMATION' && portalUrl"
+          @click="router.push(portalUrl)"
           class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer flex items-center gap-2"
         >
           <span>↗</span>
@@ -351,7 +351,7 @@ watch(
 
         <!-- PENDING without magicToken (edge case) -->
         <span
-          v-else-if="batchData.status === 'PENDING_CONFIRMATION' && !batchData.magicToken"
+          v-else-if="batchData.status === 'PENDING_CONFIRMATION' && !portalUrl"
           :class="getBatchStatusBadgeClass(batchData.status)"
           class="px-3 py-1 font-mono text-xs uppercase rounded-none border-2 border-[#1A1A1A]"
         >

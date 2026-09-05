@@ -20,7 +20,6 @@ export interface RevisionBatchDetailDTO {
   id: string;
   projectId: string;
   status: 'DRAFT' | 'PENDING_CONFIRMATION' | 'APPROVED';
-  magicToken: string;
   summary: string | null;
   items: RevisionItemDTO[];
 }
@@ -37,7 +36,6 @@ function toBatchDetailDTO(batch: RevisionBatchRow, items: RevisionItemRow[]): Re
     id: batch.id,
     projectId: batch.project_id,
     status: batch.status,
-    magicToken: batch.magic_token,
     summary: batch.ai_summary,
     items: items.map((item) => ({
       id: item.id,

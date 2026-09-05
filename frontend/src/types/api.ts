@@ -46,7 +46,6 @@ export interface RevisionBatchDetail {
   status: RevisionBatchStatus;
   summary: string | null;
   createdAt: string;
-  magicToken: string | null;
   items: RevisionItem[];
 }
 

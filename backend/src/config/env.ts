@@ -24,4 +24,6 @@ export const env = {
   FALLBACK_LLM_MODEL: process.env.FALLBACK_LLM_MODEL ?? '',
   SUPABASE_URL: process.env.SUPABASE_URL ?? '',
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
+  ENABLE_PROJECT_CONTEXT: process.env.ENABLE_PROJECT_CONTEXT === 'true',
+  ENABLE_LANGUAGE_MIRRORING: process.env.ENABLE_LANGUAGE_MIRRORING === 'true',
 } as const;

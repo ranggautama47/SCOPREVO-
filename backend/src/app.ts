@@ -9,6 +9,7 @@ import overviewRoutes from './routes/overview.routes';
 import revisionRoutes from './routes/revision.routes';
 import batchRoutes from './routes/batch.routes';
 import portalRoutes from './routes/portal.routes';
+import documentRoutes from './routes/document.routes';
 const app = express();
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGINS, credentials: true }));
@@ -19,6 +20,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/projects', revisionRoutes);
+app.use('/api/projects', documentRoutes);
 app.use('/projects', revisionRoutes);
 app.use('/api/batches', batchRoutes);
 app.use('/api/overview', overviewRoutes);
