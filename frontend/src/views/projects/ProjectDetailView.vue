@@ -8,6 +8,7 @@ import type {
   RevisionBatchStatus,
 } from "../../types/api";
 import UiQuotaBar from "../../components/ui/UiQuotaBar.vue";
+import ProjectDocumentModal from "../../components/features/ProjectDocumentModal.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -25,6 +26,17 @@ const isSubmitting = ref(false);
 const errorMsg = ref("");
 const errorCode = ref<string | null>(null);
 const feedbackSection = ref<HTMLElement | null>(null);
+
+// Document modal state
+const isDocModalOpen = ref(false);
+
+function openDocModal() {
+  isDocModalOpen.value = true;
+}
+
+function closeDocModal() {
+  isDocModalOpen.value = false;
+}
 
 async function fetchProjectDetail() {
   isLoading.value = true;
@@ -549,13 +561,22 @@ onMounted(() => {
 
             <!-- MANAGE PROJECT button -->
             <button
-              disabled
-              title="Document upload (PDF/MD/DOCX) — planned for a future release"
-              class="w-full mt-5 bg-[#FAFAF9] text-[#1A1A1A]/40 border-2 border-[#1A1A1A]/40 px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide rounded-none cursor-not-allowed"
+              type="button"
+              @click="openDocModal"
+              title="Manage attached project documents"
+              class="w-full mt-5 bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"
             >
-              MANAGE PROJECT — COMING SOON
+              MANAGE PROJECT
             </button>
           </div>
+
+          <!-- ── DOCUMENT MODAL ────────────────────────────────── -->
+          <ProjectDocumentModal
+            v-if="project"
+            :project-id="project.id"
+            :open="isDocModalOpen"
+            @close="closeDocModal"
+          />
         </div>
       </div>
 

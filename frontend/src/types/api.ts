@@ -104,3 +104,14 @@ export interface PortalBatchResponse {
     project: PortalProject;
   };
 }
+
+export type ProjectDocumentExtractionStatus = 'pending' | 'completed' | 'failed';
+
+export interface ProjectDocument {
+  id: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  extractionStatus: ProjectDocumentExtractionStatus;
+  createdAt: string;
+}

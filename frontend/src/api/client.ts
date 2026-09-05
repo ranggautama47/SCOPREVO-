@@ -7,6 +7,7 @@ import type {
   ShareBatchResponse,
   PortalBatchResponse,
   ApiErrorResponse,
+  ProjectDocument,
 } from '../types/api';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -54,8 +55,10 @@ async function request<T>(
 ): Promise<T> {
   const token = localStorage.getItem(TOKEN_KEY);
 
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers as Record<string, string>),
   };
 
@@ -162,6 +165,21 @@ export const apiClient = {
     confirm: (token: string): Promise<void> =>
       request<void>(`/portal/${token}/confirm`, {
         method: 'POST',
+      }),
+  },
+  documents: {
+    list: (projectId: string): Promise<{ documents: ProjectDocument[] }> =>
+      request<{ documents: ProjectDocument[] }>(`/projects/${projectId}/documents`, {
+        method: 'GET',
+      }),
+    upload: (projectId: string, body: FormData): Promise<{ document: ProjectDocument }> =>
+      request<{ document: ProjectDocument }>(`/projects/${projectId}/documents`, {
+        method: 'POST',
+        body,
+      }),
+    remove: (projectId: string, documentId: string): Promise<void> =>
+      request<void>(`/projects/${projectId}/documents/${documentId}`, {
+        method: 'DELETE',
       }),
   },
 };
