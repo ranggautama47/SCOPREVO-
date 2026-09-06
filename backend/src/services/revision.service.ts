@@ -4,9 +4,11 @@ import {
   revisionBatchRepository,
   revisionItemRepository,
 } from '../repositories/revision.repository';
+import { projectDocumentRepository } from '../repositories/project-document.repository';
 import { aiService } from './ai.service';
 import { NotFoundError, ConflictError } from '../middleware/error.middleware';
-import { RevisionBatchRow, RevisionItemRow } from '../types/db.types';
+import { env } from '../config/env';
+import { RevisionBatchRow, RevisionItemRow, ProjectDocumentRow } from '../types/db.types';
 
 export interface RevisionItemDTO {
   id: string;
@@ -56,6 +58,34 @@ function toBatchListDTO(batch: RevisionBatchRow & { item_count: string }): Revis
   };
 }
 
+async function buildDocumentContext(projectId: string): Promise<string> {
+  const docs = await projectDocumentRepository.listByProjectId(projectId);
+  const completed = docs
+    .filter((d: ProjectDocumentRow) => d.extraction_status === 'completed' && d.extracted_text !== null)
+    .sort((a: ProjectDocumentRow, b: ProjectDocumentRow) => a.created_at.getTime() - b.created_at.getTime());
+
+  if (completed.length === 0) return '';
+
+  const parts: string[] = [];
+  let totalChars = 0;
+  for (const doc of completed) {
+    const text = doc.extracted_text ?? '';
+    const truncated = text.slice(0, 8_000);
+    if (totalChars + truncated.length > 24_000) {
+      const remaining = 24_000 - totalChars;
+      if (remaining > 0) {
+        parts.push(`=== DOCUMENT: ${doc.filename} ===\n${truncated.slice(0, remaining)}`);
+        totalChars += remaining;
+      }
+      break;
+    }
+    parts.push(`=== DOCUMENT: ${doc.filename} ===\n${truncated}`);
+    totalChars += truncated.length;
+  }
+
+  return parts.join('\n\n');
+}
+
 export const revisionService = {
   async createBatch(
     projectId: string,
@@ -82,7 +112,24 @@ export const revisionService = {
     }
 
     // 3. Call AI service (validated schema and model fallback/retry)
-    const aiResult = await aiService.extractRevisions(rawInput);
+    let context = '';
+    if (env.ENABLE_PROJECT_CONTEXT) {
+      try {
+        context = await buildDocumentContext(projectId);
+      } catch (err) {
+        console.warn('[DOCUMENT CONTEXT] Failed to fetch documents, falling back to no-context AI call:', err);
+      }
+    }
+
+    let aiResult: Awaited<ReturnType<typeof aiService.extractRevisions>>;
+    try {
+      aiResult = context
+        ? await aiService.extractRevisions(rawInput, context)
+        : await aiService.extractRevisions(rawInput);
+    } catch {
+      console.warn('[AI] Primary/fallback failed, retrying without project context');
+      aiResult = await aiService.extractRevisions(rawInput);
+    }
 
     // 4. Persist atomically using a PostgreSQL transaction
     const client = await db.connect();
