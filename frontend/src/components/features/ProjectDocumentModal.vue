@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { apiClient, ApiError } from "../../api/client";
 import type {
   ProjectDocument,
@@ -16,7 +16,7 @@ const emit = defineEmits<{
 }>();
 
 const MAX_DOCUMENTS = 3;
-const MAX_FILE_SIZE = 2097152;
+const MAX_FILE_SIZE = 2097152; // 2 MB
 const ALLOWED_EXTENSIONS = ["pdf", "docx", "md"];
 const ACCEPT_ATTR = ".pdf,.docx,.md";
 const POLIFY_INTERVAL_MS = 2000;
@@ -32,6 +32,7 @@ const documents = ref<ProjectDocument[]>([]);
 const isLoading = ref(false);
 const isUploading = ref(false);
 const isDeleting = ref(false);
+const isDragging = ref(false); // State untuk efek visual Drag & Drop
 const errorMsg = ref("");
 const uploadErrorMsg = ref("");
 const confirmDeleteId = ref<string | null>(null);
@@ -42,6 +43,17 @@ const pendingFile = ref<File | null>(null);
 const isBusy = computed(() => isUploading.value || isDeleting.value);
 const isAtLimit = computed(() => documents.value.length >= MAX_DOCUMENTS);
 const canAttach = computed(() => !isBusy.value && !isAtLimit.value);
+
+// Otomatis fetch data setiap kali modal dibuka
+watch(
+  () => props.open,
+  (isOpen) => {
+    if (isOpen && props.projectId) {
+      fetchDocuments();
+    }
+  },
+  { immediate: true }
+);
 
 async function fetchDocuments() {
   isLoading.value = true;
@@ -65,6 +77,7 @@ function handleClose() {
   confirmDeleteId.value = null;
   uploadErrorMsg.value = "";
   errorMsg.value = "";
+  isDragging.value = false;
   emit("close");
 }
 
@@ -83,25 +96,20 @@ function getExtension(filename: string): string {
   return dot >= 0 ? filename.slice(dot + 1).toLowerCase() : "";
 }
 
-function onFileChange(event: Event) {
+// Fungsi validasi terpusat untuk File Picker maupun Dropzone
+function validateAndSetFile(file: File) {
   uploadErrorMsg.value = "";
-  const target = event.target as HTMLInputElement;
-  const file = target.files?.[0] ?? null;
   pendingFile.value = null;
-  if (!file) return;
 
   if (file.size > MAX_FILE_SIZE) {
     uploadErrorMsg.value =
-      "File is too large. Maximum allowed size is 2.00 MB (2097152 bytes).";
-    target.value = "";
+      "File is too large. Maximum allowed size is 2.00 MB.";
     return;
   }
 
   const ext = getExtension(file.name);
   if (!ALLOWED_EXTENSIONS.includes(ext)) {
-    uploadErrorMsg.value =
-      `Unsupported file type ".${ext || "?"}". Allowed: .pdf, .docx, .md.`;
-    target.value = "";
+    uploadErrorMsg.value = `Unsupported file type ".${ext || "?"}". Allowed: .pdf, .docx, .md.`;
     return;
   }
 
@@ -109,6 +117,37 @@ function onFileChange(event: Event) {
     type: EXT_TO_MIME[ext] ?? file.type,
     lastModified: file.lastModified,
   });
+}
+
+function onFileChange(event: Event) {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0] ?? null;
+  if (file) {
+    validateAndSetFile(file);
+  }
+}
+
+// --- Handler Drag & Drop ---
+function onDragOver(event: DragEvent) {
+  event.preventDefault();
+  if (!canAttach.value) return;
+  isDragging.value = true;
+}
+
+function onDragLeave(event: DragEvent) {
+  event.preventDefault();
+  isDragging.value = false;
+}
+
+function onDrop(event: DragEvent) {
+  event.preventDefault();
+  isDragging.value = false;
+  if (!canAttach.value) return;
+
+  const files = event.dataTransfer?.files;
+  if (files && files.length > 0) {
+    validateAndSetFile(files[0]);
+  }
 }
 
 function cancelFileSelection() {
@@ -136,9 +175,7 @@ async function handleUpload() {
     }
   } catch (err: unknown) {
     uploadErrorMsg.value =
-      err instanceof ApiError
-        ? `${err.code}: ${err.message}`
-        : "Upload failed.";
+      err instanceof ApiError ? `${err.code}: ${err.message}` : "Upload failed.";
   } finally {
     isUploading.value = false;
   }
@@ -156,7 +193,7 @@ async function pollDocumentStatus(documentId: string, attempt: number) {
       pollDocumentStatus(documentId, attempt + 1);
     }
   } catch {
-    // swallow polling errors — keep last-known list visible
+    // Keep last-known list visible on error
   }
 }
 
@@ -178,9 +215,7 @@ async function confirmDeleteAction(id: string) {
     confirmDeleteId.value = null;
   } catch (err: unknown) {
     errorMsg.value =
-      err instanceof ApiError
-        ? `${err.code}: ${err.message}`
-        : "Delete failed.";
+      err instanceof ApiError ? `${err.code}: ${err.message}` : "Delete failed.";
   } finally {
     isDeleting.value = false;
   }
@@ -215,10 +250,6 @@ function statusLabel(status: ProjectDocumentExtractionStatus): string {
       return "PENDING";
   }
 }
-
-onMounted(() => {
-  if (props.open) fetchDocuments();
-});
 </script>
 
 <template>
@@ -283,7 +314,7 @@ onMounted(() => {
             ATTACHED DOCUMENTS
           </p>
           <p
-            class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide text-[#1A1A1A]/80"
+            class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide text-[#1A1A1A]/80 font-bold"
           >
             {{ documents.length }} / {{ MAX_DOCUMENTS }}
           </p>
@@ -371,17 +402,12 @@ onMounted(() => {
           </li>
         </ul>
 
-        <!-- ATTACH block -->
+        <!-- ATTACH BLOCK (DROPZONE) -->
         <div class="border-t-2 border-[#1A1A1A] pt-4">
           <p
             class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#1A1A1A]/70 font-bold mb-2"
           >
             ATTACH NEW DOCUMENT
-          </p>
-          <p
-            class="font-['Noto_Serif',serif] text-xs text-[#1A1A1A]/60 mb-3"
-          >
-            Allowed: .pdf, .docx, .md · Max 2.00 MB per file.
           </p>
 
           <!-- Hidden file input -->
@@ -398,11 +424,11 @@ onMounted(() => {
             v-if="isAtLimit"
             class="border-2 border-[#E63946] bg-[#FEE2E2] text-[#991B1B] px-3 py-2 font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide rounded-none"
           >
-            Document limit reached ({{MAX_DOCUMENTS}}/{{MAX_DOCUMENTS}}). Delete
+            Document limit reached ({{ MAX_DOCUMENTS }}/{{ MAX_DOCUMENTS }}). Delete
             a document to upload a new one.
           </p>
 
-          <!-- Pending file -->
+          <!-- Pending file preview -->
           <div
             v-else-if="pendingFile"
             class="border-2 border-[#1A1A1A] bg-[#FDFFB6] p-3 flex items-center justify-between gap-3"
@@ -439,16 +465,30 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- Pick file button -->
-          <button
+          <!-- DROPZONE / SELECT FILE BOX -->
+          <div
             v-else
-            type="button"
+            @dragover="onDragOver"
+            @dragleave="onDragLeave"
+            @drop="onDrop"
             @click="openFilePicker"
-            :disabled="!canAttach"
-            class="w-full bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[4px_4px_0px_0px_#1A1A1A]"
+            :class="[
+              isDragging
+                ? 'border-[#006D77] bg-[#DCCCFF]/40 border-solid'
+                : 'border-[#1A1A1A]/40 bg-[#FAFAF9] hover:border-[#1A1A1A] border-dashed',
+              !canAttach ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+            ]"
+            class="border-2 p-6 text-center transition-all duration-150 flex flex-col items-center justify-center gap-1 group"
           >
-            + SELECT FILE
-          </button>
+            <p
+              class="font-['Inter',sans-serif] text-sm font-bold uppercase tracking-wide text-[#1A1A1A] group-hover:text-[#006D77]"
+            >
+              {{ isDragging ? "DROP FILE HERE" : "DRAG & DROP FILE HERE OR CLICK TO BROWSE" }}
+            </p>
+            <p class="font-['Noto_Serif',serif] text-xs text-[#1A1A1A]/60">
+              Allowed: .pdf, .docx, .md · Max 2.00 MB
+            </p>
+          </div>
 
           <!-- Upload validation error -->
           <p
