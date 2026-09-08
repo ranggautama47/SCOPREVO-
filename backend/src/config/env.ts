@@ -26,4 +26,11 @@ export const env = {
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ?? '',
   ENABLE_PROJECT_CONTEXT: process.env.ENABLE_PROJECT_CONTEXT === 'true',
   ENABLE_LANGUAGE_MIRRORING: process.env.ENABLE_LANGUAGE_MIRRORING === 'true',
+  SMTP_HOST: process.env.SMTP_HOST ?? '',
+  SMTP_PORT: parseInt(process.env.SMTP_PORT ?? '587', 10),
+  SMTP_SECURE: process.env.SMTP_SECURE ?? 'false',
+  SMTP_USER: process.env.SMTP_USER ?? '',
+  SMTP_PASS: process.env.SMTP_PASS ?? '',
+  APP_BASE_URL: process.env.APP_BASE_URL ?? 'http://localhost:5173',
+  MAIL_FROM: process.env.MAIL_FROM ?? 'noreply@scoprevo.com',
 } as const;

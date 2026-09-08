@@ -10,3 +10,8 @@ export const loginSchema = z.object({
 });
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export const changePasswordSchema = z.object({
+  currentPassword: z.string({ required_error: 'Current password is required.' }),
+  newPassword: z.string({ required_error: 'New password is required.' }).min(8),
+});
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;

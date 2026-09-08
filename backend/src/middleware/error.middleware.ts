@@ -17,8 +17,8 @@ export class ValidationError extends AppError {
   }
 }
 export class UnauthorizedError extends AppError {
-  constructor(message = 'Authentication required.') {
-    super('UNAUTHORIZED', message, 401);
+  constructor(message = 'Authentication required.', code = 'UNAUTHORIZED') {
+    super(code, message, 401);
     this.name = 'UnauthorizedError';
   }
 }
@@ -38,6 +38,12 @@ export class ConflictError extends AppError {
   constructor(code: string, message: string, details?: unknown) {
     super(code, message, 409, details);
     this.name = 'ConflictError';
+  }
+}
+export class TooManyRequestsError extends AppError {
+  constructor(code: string, message: string, details?: unknown) {
+    super(code, message, 429, details);
+    this.name = 'TooManyRequestsError';
   }
 }
 export function errorMiddleware(
