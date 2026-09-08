@@ -47,7 +47,24 @@ const routes: RouteRecordRaw[] = [
         name: 'batch-detail',
         component: () => import('../views/batches/BatchDetailView.vue'),
       },
+      {
+        path: 'settings',
+        name: 'settings',
+        component: () => import('../views/settings/SettingsView.vue'),
+        meta: { requiresAuth: true },
+      },
+      {
+        path: 'history',
+        name: 'history',
+        component: () => import('../views/history/HistoryView.vue'),
+        meta: { requiresAuth: true },
+      },
     ],
+  },
+  {
+    path: '/verify-email/:token',
+    name: 'verify-email',
+    component: () => import('../views/auth/VerifyEmailView.vue'),
   },
   {
     path: '/portal/:token',

@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { onMounted, ref, computed, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { apiClient, ApiError } from '../../api/client';
-import type { RevisionBatchDetail, RevisionBatchStatus, ScopeStatus, ShareBatchResponse } from '../../types/api';
+import { onMounted, ref, computed, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { apiClient, ApiError } from "../../api/client";
+import type {
+  RevisionBatchDetail,
+  RevisionBatchStatus,
+  ScopeStatus,
+  ShareBatchResponse,
+} from "../../types/api";
 
 const route = useRoute();
 const router = useRouter();
@@ -17,9 +22,19 @@ const networkError = ref(false);
 // Share state
 const isSharing = ref(false);
 const showModal = ref(false);
-const portalUrl = ref('');
+const portalUrl = ref("");
 const shareError = ref<string | null>(null);
-const copyState = ref<'idle' | 'copied' | 'failed'>('idle');
+const copyState = ref<"idle" | "copied" | "failed">("idle");
+
+// Prefer the token returned with the batch, while retaining a generated link
+// from handleShare() for older/detail responses that omit magicToken.
+const effectivePortalUrl = computed(() => {
+  const token = batchData.value?.magicToken;
+  if (token) {
+    return `${window.location.origin}/portal/${token}`;
+  }
+  return portalUrl.value || "";
+});
 
 async function fetchBatchDetail(id: string) {
   isLoading.value = true;
@@ -29,7 +44,10 @@ async function fetchBatchDetail(id: string) {
     const res = await apiClient.batches.getDetail(id);
     batchData.value = res.batch;
   } catch (err: unknown) {
-    if (err instanceof ApiError && (err.code === 'NOT_FOUND' || err.status === 404)) {
+    if (
+      err instanceof ApiError &&
+      (err.code === "NOT_FOUND" || err.status === 404)
+    ) {
       notFound.value = true;
     } else {
       networkError.value = true;
@@ -43,7 +61,7 @@ function goBackToProject() {
   if (batchData.value?.projectId) {
     router.push(`/projects/${batchData.value.projectId}`);
   } else {
-    router.push('/projects');
+    router.push("/projects");
   }
 }
 
@@ -52,54 +70,64 @@ function retryFetch() {
 }
 
 function formatCreatedDate(dateStr: string | undefined): string {
-  if (!dateStr) return 'Unknown date';
+  if (!dateStr) return "Unknown date";
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return 'Unknown date';
-  return d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  if (isNaN(d.getTime())) return "Unknown date";
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 }
 
 function getBatchStatusBadgeClass(status: RevisionBatchStatus): string {
   switch (status) {
-    case 'DRAFT':
-      return 'bg-[#E5E7EB] text-[#1A1A1A]';
-    case 'PENDING_CONFIRMATION':
-      return 'bg-[#FDFFB6] text-[#1A1A1A]';
-    case 'APPROVED':
-      return 'bg-[#DCFCE7] text-[#166534]';
+    case "DRAFT":
+      return "bg-[#E5E7EB] text-[#1A1A1A]";
+    case "PENDING_CONFIRMATION":
+      return "bg-[#FDFFB6] text-[#1A1A1A]";
+    case "APPROVED":
+      return "bg-[#DCFCE7] text-[#166534]";
     default:
-      return 'bg-[#E5E7EB] text-[#1A1A1A]';
+      return "bg-[#E5E7EB] text-[#1A1A1A]";
   }
 }
 
 function getScopeStatusBadgeClass(status: ScopeStatus): string {
   switch (status) {
-    case 'IN_SCOPE':
-      return 'bg-[#DCFCE7] text-[#166534]';
-    case 'OUT_OF_SCOPE':
-      return 'bg-[#FEE2E2] text-[#991B1B]';
-    case 'NEEDS_REVIEW':
-      return 'bg-[#FDFFB6] text-[#1A1A1A]';
+    case "IN_SCOPE":
+      return "bg-[#DCFCE7] text-[#166534]";
+    case "OUT_OF_SCOPE":
+      return "bg-[#FEE2E2] text-[#991B1B]";
+    case "NEEDS_REVIEW":
+      return "bg-[#FDFFB6] text-[#1A1A1A]";
     default:
-      return 'bg-[#E5E7EB] text-[#1A1A1A]';
+      return "bg-[#E5E7EB] text-[#1A1A1A]";
   }
 }
 
-function shouldShowReason(item: { scopeStatus: ScopeStatus; reason: string | null }): boolean {
-  return item.scopeStatus !== 'IN_SCOPE' && !!item.reason && item.reason.trim().length > 0;
+function shouldShowReason(item: {
+  scopeStatus: ScopeStatus;
+  reason: string | null;
+}): boolean {
+  return (
+    item.scopeStatus !== "IN_SCOPE" &&
+    !!item.reason &&
+    item.reason.trim().length > 0
+  );
 }
 
 const inScopeCount = computed(() => {
   if (!batchData.value?.items) return 0;
-  return batchData.value.items.filter((item) => item.scopeStatus === 'IN_SCOPE').length;
+  return batchData.value.items.filter((item) => item.scopeStatus === "IN_SCOPE")
+    .length;
 });
 
 const outOfScopeCount = computed(() => {
   if (!batchData.value?.items) return 0;
-  return batchData.value.items.filter((item) => item.scopeStatus === 'OUT_OF_SCOPE').length;
+  return batchData.value.items.filter(
+    (item) => item.scopeStatus === "OUT_OF_SCOPE",
+  ).length;
 });
 
 async function handleShare() {
@@ -107,44 +135,62 @@ async function handleShare() {
   isSharing.value = true;
   shareError.value = null;
   try {
-    const res: ShareBatchResponse = await apiClient.batches.share(batchId.value);
+    const res: ShareBatchResponse = await apiClient.batches.share(
+      batchId.value,
+    );
     const magicToken = res.batch.magicToken;
     portalUrl.value = `${window.location.origin}/portal/${magicToken}`;
     showModal.value = true;
   } catch (err: unknown) {
     if (err instanceof ApiError) {
-      if (err.code === 'INVALID_STATE' || err.status === 409) {
+      if (err.code === "INVALID_STATE" || err.status === 409) {
         await fetchBatchDetail(batchId.value);
+        if (!effectivePortalUrl.value) {
+          shareError.value =
+            "This batch is already active, but its magic link is unavailable. Please refresh or contact support.";
+        }
         isSharing.value = false;
         return;
       }
-      shareError.value = err.status && err.status >= 500
-        ? 'Server error. Please try again later.'
-        : 'Failed to generate magic link. Please try again.';
+      shareError.value =
+        err.status && err.status >= 500
+          ? "Server error. Please try again later."
+          : "Failed to generate magic link. Please try again.";
     } else {
-      shareError.value = 'An unexpected error occurred.';
+      shareError.value = "An unexpected error occurred.";
     }
   } finally {
     isSharing.value = false;
   }
 }
 
-async function copyToClipboard() {
+// Fungsi copy fleksibel (Bisa dipanggil dari modal maupun tombol di kanan bawah)
+async function copyLinkDirectly(urlToCopy?: string) {
+  const targetUrl = urlToCopy || effectivePortalUrl.value;
+  if (!targetUrl) return;
+
   try {
-    await navigator.clipboard.writeText(portalUrl.value);
-    copyState.value = 'copied';
-    setTimeout(() => { copyState.value = 'idle'; }, 2000);
-    return true;
+    await navigator.clipboard.writeText(targetUrl);
+    copyState.value = "copied";
+    setTimeout(() => {
+      copyState.value = "idle";
+    }, 2000);
   } catch {
-    copyState.value = 'failed';
-    setTimeout(() => { copyState.value = 'idle'; }, 3000);
-    return false;
+    copyState.value = "failed";
+    setTimeout(() => {
+      copyState.value = "idle";
+    }, 3000);
+  }
+}
+
+function openPortalInNewTab() {
+  if (effectivePortalUrl.value) {
+    window.open(effectivePortalUrl.value, "_blank");
   }
 }
 
 function closeModal() {
   showModal.value = false;
-  portalUrl.value = '';
   fetchBatchDetail(batchId.value);
 }
 
@@ -155,17 +201,19 @@ onMounted(() => {
 watch(
   () => route.params.id,
   (newId) => {
-    if (typeof newId === 'string') {
+    if (typeof newId === "string") {
       fetchBatchDetail(newId);
     }
-  }
+  },
 );
 </script>
 
 <template>
   <section class="bg-[#FAFAF9] min-h-screen">
     <!-- ── 1. TOP BAR ─────────────────────────────────────────── -->
-    <div class="flex items-center justify-between border-b-2 border-[#1A1A1A] px-8 md:px-12 py-4 bg-[#FAFAF9]">
+    <div
+      class="flex items-center justify-between border-b-2 border-[#1A1A1A] px-8 md:px-12 py-4 bg-[#FAFAF9]"
+    >
       <button
         @click="goBackToProject"
         class="font-mono text-xs uppercase tracking-widest text-[#1A1A1A] hover:underline hover:decoration-[#DCCCFF] hover:decoration-2 transition-all duration-100 cursor-pointer"
@@ -178,7 +226,7 @@ watch(
           :class="getBatchStatusBadgeClass(batchData.status)"
           class="font-mono text-xs uppercase tracking-wider px-3 py-1 rounded-none border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]"
         >
-          [{{ batchData.status.replace(/_/g, ' ') }}]
+          [{{ batchData.status.replace(/_/g, " ") }}]
         </span>
       </div>
     </div>
@@ -194,7 +242,9 @@ watch(
 
     <!-- ── NOT FOUND ────────────────────────────────────────────── -->
     <div v-else-if="notFound" class="px-8 md:px-12 py-12 space-y-4">
-      <p class="font-editorial text-xl font-normal leading-[1.3] text-[#1A1A1A]/60">
+      <p
+        class="font-editorial text-xl font-normal leading-[1.3] text-[#1A1A1A]/60"
+      >
         Batch not found or access denied.
       </p>
       <router-link
@@ -207,7 +257,9 @@ watch(
 
     <!-- ── NETWORK ERROR ────────────────────────────────────────── -->
     <div v-else-if="networkError" class="px-8 md:px-12 py-12 space-y-4">
-      <p class="font-editorial text-xl font-normal leading-[1.3] text-[#1A1A1A]/60">
+      <p
+        class="font-editorial text-xl font-normal leading-[1.3] text-[#1A1A1A]/60"
+      >
         Unable to load batch data.
       </p>
       <button
@@ -222,7 +274,9 @@ watch(
     <div v-else-if="batchData" class="px-8 md:px-12 py-8">
       <!-- ── 2. HEADER ─────────────────────────────────────────── -->
       <div class="border-b-2 border-[#1A1A1A] pb-4 mb-8">
-        <h1 class="font-editorial text-4xl md:text-5xl font-normal leading-[1.1] tracking-tight text-[#1A1A1A]">
+        <h1
+          class="font-editorial text-4xl md:text-5xl font-normal leading-[1.1] tracking-tight text-[#1A1A1A]"
+        >
           Batch #{{ batchData.id.slice(0, 3) }} — Revision Feedback
         </h1>
         <p class="font-body text-base leading-[1.6] text-[#1A1A1A]/60 mt-2">
@@ -232,37 +286,52 @@ watch(
 
       <!-- ── TWO-COLUMN SPLIT: SUMMARY + STATS (LEFT) | ITEMS (RIGHT) ── -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-10">
-        
         <!-- LEFT COLUMN: AI Summary & Stat Counters -->
         <div class="lg:col-span-4 space-y-6">
           <!-- ── 3. AI SUMMARY CARD ─────────────────────────────── -->
-          <div class="bg-[#FAFAF9] border-2 border-[#1A1A1A] shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none p-6 transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A]">
-            <p class="font-mono text-[11px] uppercase tracking-wider text-[#1A1A1A]/60 mb-3 font-bold border-b-2 border-[#1A1A1A] pb-1 inline-block">
+          <div
+            class="bg-[#FAFAF9] border-2 border-[#1A1A1A] shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none p-6 transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A]"
+          >
+            <p
+              class="font-mono text-[11px] uppercase tracking-wider text-[#1A1A1A]/60 mb-3 font-bold border-b-2 border-[#1A1A1A] pb-1 inline-block"
+            >
               AI Summary
             </p>
             <p class="font-body text-base leading-[1.6] text-[#1A1A1A] mt-2">
-              {{ batchData.summary || 'No summary generated for this batch.' }}
+              {{ batchData.summary || "No summary generated for this batch." }}
             </p>
           </div>
 
           <!-- ── STAT COUNTER CARDS (BRUTALIST HOVER & SHADOWS) ── -->
           <div class="grid grid-cols-2 gap-4">
             <!-- In Scope Card -->
-            <div class="bg-[#DCFCE7] border-2 border-[#1A1A1A] shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none p-4 text-center transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A]">
-              <p class="font-mono text-4xl font-bold text-[#166534] leading-none mb-2">
+            <div
+              class="bg-[#DCFCE7] border-2 border-[#1A1A1A] shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none p-4 text-center transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A]"
+            >
+              <p
+                class="font-mono text-4xl font-bold text-[#166534] leading-none mb-2"
+              >
                 {{ inScopeCount }}
               </p>
-              <p class="font-mono text-[10px] uppercase tracking-widest text-[#166534] font-bold border-t-2 border-[#1A1A1A] pt-2">
+              <p
+                class="font-mono text-[10px] uppercase tracking-widest text-[#166534] font-bold border-t-2 border-[#1A1A1A] pt-2"
+              >
                 IN SCOPE
               </p>
             </div>
 
             <!-- Out of Scope Card -->
-            <div class="bg-[#FEE2E2] border-2 border-[#1A1A1A] shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none p-4 text-center transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A]">
-              <p class="font-mono text-4xl font-bold text-[#991B1B] leading-none mb-2">
+            <div
+              class="bg-[#FEE2E2] border-2 border-[#1A1A1A] shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none p-4 text-center transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A]"
+            >
+              <p
+                class="font-mono text-4xl font-bold text-[#991B1B] leading-none mb-2"
+              >
                 {{ outOfScopeCount }}
               </p>
-              <p class="font-mono text-[10px] uppercase tracking-widest text-[#991B1B] font-bold border-t-2 border-[#1A1A1A] pt-2">
+              <p
+                class="font-mono text-[10px] uppercase tracking-widest text-[#991B1B] font-bold border-t-2 border-[#1A1A1A] pt-2"
+              >
                 OUT OF SCOPE
               </p>
             </div>
@@ -277,14 +346,19 @@ watch(
             class="bg-[#FAFAF9] border-2 border-[#1A1A1A] shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none p-6 transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A]"
           >
             <!-- Item Header: Category Tag (Left) + Scope Badge (Right) -->
-            <div class="flex items-center justify-between gap-4 mb-4 pb-3 border-b-2 border-[#1A1A1A]/10">
+            <div
+              class="flex items-center justify-between gap-4 mb-4 pb-3 border-b-2 border-[#1A1A1A]/10"
+            >
               <span
                 v-if="item.category"
                 class="inline-block bg-[#DCCCFF] text-[#1A1A1A] border-2 border-[#1A1A1A] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider rounded-none font-bold shadow-[2px_2px_0px_0px_#1A1A1A]"
               >
                 [{{ item.category }}]
               </span>
-              <span v-else class="inline-block bg-[#DCCCFF] text-[#1A1A1A] border-2 border-[#1A1A1A] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider rounded-none font-bold shadow-[2px_2px_0px_0px_#1A1A1A]">
+              <span
+                v-else
+                class="inline-block bg-[#DCCCFF] text-[#1A1A1A] border-2 border-[#1A1A1A] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider rounded-none font-bold shadow-[2px_2px_0px_0px_#1A1A1A]"
+              >
                 [GENERAL]
               </span>
 
@@ -292,12 +366,14 @@ watch(
                 :class="getScopeStatusBadgeClass(item.scopeStatus)"
                 class="px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider rounded-none font-bold border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]"
               >
-                [{{ item.scopeStatus.replace(/_/g, ' ') }}]
+                [{{ item.scopeStatus.replace(/_/g, " ") }}]
               </span>
             </div>
 
             <!-- Item Description -->
-            <p class="font-body text-base text-[#1A1A1A] leading-[1.6] whitespace-pre-line font-medium">
+            <p
+              class="font-body text-base text-[#1A1A1A] leading-[1.6] whitespace-pre-line font-medium"
+            >
               {{ item.description }}
             </p>
 
@@ -307,7 +383,10 @@ watch(
               class="border-l-4 border-[#1A1A1A] bg-[#FDFFB6]/30 p-3 mt-4"
             >
               <p class="font-body text-sm text-[#1A1A1A] leading-[1.5]">
-                <span class="font-mono text-xs font-bold uppercase tracking-wider text-[#1A1A1A] mr-1">REASON:</span>
+                <span
+                  class="font-mono text-xs font-bold uppercase tracking-wider text-[#1A1A1A] mr-1"
+                  >REASON:</span
+                >
                 <span class="italic">{{ item.reason }}</span>
               </p>
             </div>
@@ -318,7 +397,9 @@ watch(
             v-if="batchData.items.length === 0"
             class="bg-[#FAFAF9] border-2 border-dashed border-[#1A1A1A]/40 p-12 rounded-none text-center"
           >
-            <p class="font-editorial text-xl text-[#1A1A1A]/60">No items extracted</p>
+            <p class="font-editorial text-xl text-[#1A1A1A]/60">
+              No items extracted
+            </p>
             <p class="font-body text-sm text-[#1A1A1A]/40 mt-2">
               The AI could not identify structured revisions from this feedback.
             </p>
@@ -327,41 +408,78 @@ watch(
       </div>
 
       <!-- ── 5. BOTTOM ACTIONS ─────────────────────────────────── -->
-      <div class="border-t-2 border-[#1A1A1A] pt-6 flex justify-end">
-        <!-- DRAFT → GENERATE MAGIC LINK -->
-        <button
-          v-if="batchData.status === 'DRAFT'"
-          @click="handleShare"
-          :disabled="isSharing"
-          class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 cursor-pointer flex items-center gap-2"
-        >
-          <span>⚭</span>
-          <span>{{ isSharing ? 'GENERATING LINK...' : 'GENERATE MAGIC LINK' }}</span>
-        </button>
+      <div
+        class="border-t-2 border-[#1A1A1A] pt-6 flex flex-wrap items-center justify-between gap-4"
+      >
+        <!-- Status Badge Kiri -->
+        <div>
+          <span
+            :class="getBatchStatusBadgeClass(batchData.status)"
+            class="font-mono text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-none border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]"
+          >
+            STATUS: {{ batchData.status.replace(/_/g, " ") }}
+          </span>
+        </div>
 
-        <!-- PENDING_CONFIRMATION → VIEW PORTAL -->
-        <button
-          v-else-if="batchData.status === 'PENDING_CONFIRMATION' && portalUrl"
-          @click="router.push(portalUrl)"
-          class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer flex items-center gap-2"
-        >
-          <span>↗</span>
-          <span>VIEW PORTAL</span>
-        </button>
+        <!-- Action Buttons Kanan -->
+        <div class="flex items-center gap-3">
+          <!-- 1. DRAFT → TOMBOL GENERATE MAGIC LINK -->
+          <button
+            v-if="batchData.status === 'DRAFT'"
+            @click="handleShare"
+            :disabled="isSharing"
+            class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+          >
+            <span>⚭</span>
+            <span>{{
+              isSharing ? "GENERATING LINK..." : "GENERATE MAGIC LINK"
+            }}</span>
+          </button>
 
-        <!-- PENDING without magicToken (edge case) -->
-        <span
-          v-else-if="batchData.status === 'PENDING_CONFIRMATION' && !portalUrl"
-          :class="getBatchStatusBadgeClass(batchData.status)"
-          class="px-3 py-1 font-mono text-xs uppercase rounded-none border-2 border-[#1A1A1A]"
-        >
-          {{ batchData.status.replace(/_/g, ' ') }}
-        </span>
+          <!-- 2. PENDING_CONFIRMATION → keep the action area visible even
+               when an older API response omitted magicToken. -->
+          <template v-else-if="batchData.status === 'PENDING_CONFIRMATION'">
+            <template v-if="effectivePortalUrl">
+              <button
+                @click="copyLinkDirectly()"
+                class="bg-[#FDFFB6] text-[#1A1A1A] border-2 border-[#1A1A1A] px-5 py-3 font-ui text-sm font-bold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] transition-all cursor-pointer flex items-center gap-2"
+              >
+                <span>📋</span>
+                <span>{{
+                  copyState === "copied" ? "LINK COPIED!" : "COPY MAGIC LINK"
+                }}</span>
+              </button>
+
+              <button
+                @click="openPortalInNewTab"
+                class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-5 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer flex items-center gap-2"
+              >
+                <span>↗</span>
+                <span>VIEW PORTAL</span>
+              </button>
+            </template>
+
+            <button
+              v-else
+              @click="handleShare"
+              :disabled="isSharing"
+              class="bg-[#FDFFB6] text-[#1A1A1A] border-2 border-[#1A1A1A] px-5 py-3 font-ui text-sm font-bold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+            >
+              <span>↻</span>
+              <span>{{ isSharing ? "FETCHING LINK..." : "RE-GENERATE MAGIC LINK" }}</span>
+            </button>
+          </template>
+        </div>
       </div>
 
       <!-- Share Error -->
-      <div v-if="shareError" class="mt-4 border-2 border-[#E63946] bg-[#FEE2E2] p-4 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A]">
-        <p class="font-ui text-sm uppercase text-[#991B1B] mb-1 font-bold">{{ shareError }}</p>
+      <div
+        v-if="shareError"
+        class="mt-4 border-2 border-[#E63946] bg-[#FEE2E2] p-4 rounded-none shadow-[4px_4px_0px_0px_#1A1A1A]"
+      >
+        <p class="font-ui text-sm uppercase text-[#991B1B] mb-1 font-bold">
+          {{ shareError }}
+        </p>
         <button
           @click="handleShare"
           class="mt-2 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-ui text-xs uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"
@@ -377,8 +495,12 @@ watch(
       class="fixed inset-0 bg-[#1A1A1A]/50 flex items-center justify-center z-50 p-4"
       @click.self="closeModal"
     >
-      <div class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-8 max-w-lg w-full rounded-none shadow-[8px_8px_0px_0px_#1A1A1A]">
-        <div class="flex items-center justify-between border-b-2 border-[#1A1A1A] pb-3 mb-4">
+      <div
+        class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-8 max-w-lg w-full rounded-none shadow-[8px_8px_0px_0px_#1A1A1A]"
+      >
+        <div
+          class="flex items-center justify-between border-b-2 border-[#1A1A1A] pb-3 mb-4"
+        >
           <h2 class="font-editorial text-2xl font-normal text-[#1A1A1A]">
             Magic Link Generated
           </h2>
@@ -391,21 +513,22 @@ watch(
         </div>
 
         <p class="font-body text-sm text-[#1A1A1A]/80 leading-[1.6] mb-4">
-          Share this link with your client. They can review and confirm the scope without needing to log in.
+          Share this link with your client. They can review and confirm the
+          scope without needing to log in.
         </p>
 
         <div class="flex items-center gap-2 mb-6">
           <input
             type="text"
             readonly
-            :value="portalUrl"
+            :value="effectivePortalUrl"
             class="flex-1 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-3 py-2 font-mono text-xs rounded-none outline-none select-all"
           />
           <button
-            @click="copyToClipboard"
+            @click="copyLinkDirectly(effectivePortalUrl)"
             class="bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-ui text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100 shrink-0 cursor-pointer"
           >
-            {{ copyState === 'copied' ? 'COPIED!' : 'COPY' }}
+            {{ copyState === "copied" ? "COPIED!" : "COPY" }}
           </button>
         </div>
 

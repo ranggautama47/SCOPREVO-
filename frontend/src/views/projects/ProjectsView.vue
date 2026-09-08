@@ -97,7 +97,17 @@ async function fetchProjects() {
 }
 
 function openModal() {
-  form.value = { name: "", clientName: "", totalAllowedRevisions: 3 };
+  // 1. Ambil nilai default quota dari localStorage
+  const savedQuota = localStorage.getItem("scoprevo_default_revisions");
+  const initialQuota = savedQuota ? parseInt(savedQuota, 10) : 3;
+
+  // 2. Pre-fill modal form dengan nilai tersebut
+  form.value = {
+    name: "",
+    clientName: "",
+    totalAllowedRevisions:
+      !isNaN(initialQuota) && initialQuota > 0 ? initialQuota : 3,
+  };
   isModalOpen.value = true;
 }
 
@@ -159,7 +169,9 @@ onMounted(() => {
           WORKSPACE
         </router-link>
         <span class="font-mono text-xs text-[#1A1A1A]/30">/</span>
-        <span class="font-mono text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">
+        <span
+          class="font-mono text-xs font-bold uppercase tracking-wider text-[#1A1A1A]"
+        >
           PROJECTS
         </span>
       </nav>

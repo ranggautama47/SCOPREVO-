@@ -7,6 +7,7 @@ export interface UserAccount {
   name: string;
   email: string;
   createdAt?: string;
+  emailVerified?: boolean;
 }
 
 export interface AuthResponse {
@@ -38,6 +39,12 @@ export interface RevisionBatchSummary {
   status: RevisionBatchStatus;
   createdAt: string;
   itemCount: number;
+  summary?: string | null;
+  scopeCounts?: {
+    inScope: number;
+    outScope: number;
+    needsReview: number;
+  };
 }
 
 export interface RevisionBatchDetail {
@@ -47,6 +54,7 @@ export interface RevisionBatchDetail {
   summary: string | null;
   createdAt: string;
   items: RevisionItem[];
+  magicToken?: string | null;
 }
 
 export interface ShareBatchResponse {

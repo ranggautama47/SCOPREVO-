@@ -116,6 +116,19 @@ export const apiClient = {
         method: 'POST',
         body: JSON.stringify(data),
       }),
+    changePassword: (data: { currentPassword: string; newPassword: string }): Promise<{ message: string }> =>
+      request<{ message: string }>('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    sendVerification: (): Promise<{ message: string; deliveredVia: 'smtp' | 'console'; expiresAt: string }> =>
+      request<{ message: string; deliveredVia: 'smtp' | 'console'; expiresAt: string }>('/auth/verification-email', {
+        method: 'POST',
+      }),
+    verifyEmail: (token: string): Promise<{ message: string }> =>
+      request<{ message: string }>(`/auth/verify-email/${token}`, {
+        method: 'GET',
+      }),
   },
   overview: {
     get: (): Promise<OverviewData> =>
