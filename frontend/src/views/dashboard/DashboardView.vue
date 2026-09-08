@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Calendar,
   ExternalLink,
+  FileText,
 } from "lucide-vue-next";
 import UiStatusBadge from "../../components/ui/UiStatusBadge.vue";
 import AppTopbar from "../../components/features/AppTopbar.vue";
@@ -118,35 +119,39 @@ onMounted(() => {
 <template>
   <section class="p-6 md:p-10 max-w-[1300px] mx-auto min-h-screen bg-[#FAFAF9]">
     <!-- TOP BAR -->
-<div class="flex items-center justify-between mb-6">
-  <div class="flex items-center gap-4">
-    <!-- Breadcrumb -->
-    <nav aria-label="Breadcrumb">
-      <router-link
-        to="/dashboard"
-        class="font-['JetBrains_Mono',monospace] text-lg font-bold uppercase tracking-wider text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:underline decoration-[#DCCCFF] decoration-2 underline-offset-4 transition-all"
-      >
-        WORKSPACE
-      </router-link>
-    </nav>
+    <div class="flex items-center justify-between mb-6">
+      <div class="flex items-center gap-4">
+        <!-- Breadcrumb -->
+        <nav aria-label="Breadcrumb">
+          <router-link
+            to="/dashboard"
+            class="font-['JetBrains_Mono',monospace] text-lg font-bold uppercase tracking-wider text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:underline decoration-[#DCCCFF] decoration-2 underline-offset-4 transition-all"
+          >
+            WORKSPACE
+          </router-link>
+        </nav>
 
-    <!-- Pemisah -->
-    <div class="border-l-2 border-[#1A1A1A]/20 h-6"></div>
+        <!-- Pemisah -->
+        <div class="border-l-2 border-[#1A1A1A]/20 h-6"></div>
 
-    <!-- Greeting + Date (di samping WORKSPACE) -->
-    <div class="hidden md:block">
-      <p class="font-['Baskervville',serif] text-lg font-normal text-[#1A1A1A] leading-tight">
-        {{ getGreeting() }}, {{ authStore.account?.name || "User" }}
-      </p>
-      <p class="font-['Noto_Serif',serif] text-lg text-[#1A1A1A] leading-tight">
-        {{ formatFullDate() }}
-      </p>
+        <!-- Greeting + Date (di samping WORKSPACE) -->
+        <div class="hidden md:block">
+          <p
+            class="font-['Baskervville',serif] text-lg font-normal text-[#1A1A1A] leading-tight"
+          >
+            {{ getGreeting() }}, {{ authStore.account?.name || "User" }}
+          </p>
+          <p
+            class="font-['Noto_Serif',serif] text-lg text-[#1A1A1A] leading-tight"
+          >
+            {{ formatFullDate() }}
+          </p>
+        </div>
+      </div>
+
+      <!-- AppTopbar -->
+      <AppTopbar />
     </div>
-  </div>
-
-  <!-- AppTopbar -->
-  <AppTopbar />
-</div>
 
     <!-- PAGE TITLE -->
     <div class="border-b-2 border-[#1A1A1A] pb-6 mb-8">
@@ -389,11 +394,24 @@ onMounted(() => {
               <div
                 class="pt-2 border-t-2 border-dashed border-[#1A1A1A]/20 flex justify-between items-center"
               >
+                <!-- Kiri: Tanggal -->
                 <span
                   class="font-['JetBrains_Mono',monospace] text-[11px] text-[#1A1A1A]/50 uppercase tracking-wide flex items-center gap-1.5"
                 >
                   <Calendar class="w-3 h-3 text-[#1A1A1A]/50" />
                   {{ formatDate(project.createdAt) }}
+                </span>
+
+                <!-- Kanan: Indikator Dokumen (hanya jika ada) -->
+                <span
+                  class="inline-flex items-center gap-1 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-1.5 py-0.5 font-['JetBrains_Mono',monospace] text-[10px] font-bold rounded-none"
+                  :class="
+                    (project.documentCount ?? 0) === 0 ? 'opacity-40' : ''
+                  "
+                  title="Attached Documents"
+                >
+                  <FileText class="w-3 h-3" />
+                  {{ project.documentCount ?? 0 }}
                 </span>
               </div>
             </div>
@@ -485,7 +503,7 @@ onMounted(() => {
               class="flex justify-end items-center mt-3 border-t border-[#1A1A1A]/10 pt-3"
             >
               <span
-                 class="font-['Noto_Serif',serif] text-sm font-semibold text-[#ff002b] bg-[#FDFFB6] px-2 py-0.5 border border-[#ff002b]/20 rounded-none inline-block"
+                class="font-['Noto_Serif',serif] text-sm font-semibold text-[#ff002b] bg-[#FDFFB6] px-2 py-0.5 border border-[#ff002b]/20 rounded-none inline-block"
               >
                 {{ getClientName(batch.projectId) }}
               </span>
@@ -512,16 +530,23 @@ onMounted(() => {
               :key="page"
               type="button"
               @click="currentBatchPage = page"
-              :class="currentBatchPage === page
-                ? 'font-[\'JetBrains_Mono\',monospace] text-xs font-bold uppercase border-2 border-[#1A1A1A] rounded-none px-3 py-1.5 bg-[#1A1A1A] text-[#FAFAF9] shadow-[2px_2px_0px_0px_#1A1A1A]'
-                : 'font-[\'JetBrains_Mono\',monospace] text-xs font-bold uppercase border-2 border-[#1A1A1A] rounded-none px-3 py-1.5 bg-[#FAFAF9] text-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#DCCCFF] transition-colors'"
+              :class="
+                currentBatchPage === page
+                  ? 'font-[\'JetBrains_Mono\',monospace] text-xs font-bold uppercase border-2 border-[#1A1A1A] rounded-none px-3 py-1.5 bg-[#1A1A1A] text-[#FAFAF9] shadow-[2px_2px_0px_0px_#1A1A1A]'
+                  : 'font-[\'JetBrains_Mono\',monospace] text-xs font-bold uppercase border-2 border-[#1A1A1A] rounded-none px-3 py-1.5 bg-[#FAFAF9] text-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#DCCCFF] transition-colors'
+              "
             >
               {{ page }}
             </button>
 
             <button
               type="button"
-              @click="currentBatchPage = Math.min(totalBatchPages, currentBatchPage + 1)"
+              @click="
+                currentBatchPage = Math.min(
+                  totalBatchPages,
+                  currentBatchPage + 1,
+                )
+              "
               :disabled="currentBatchPage === totalBatchPages"
               class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase border-2 border-[#1A1A1A] rounded-none bg-[#FAFAF9] text-[#1A1A1A] px-3 py-1.5 shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#DCCCFF] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >

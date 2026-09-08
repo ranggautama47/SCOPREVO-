@@ -10,6 +10,7 @@ import {
   ArrowUpRight,
   ArrowUpDown,
   Search,
+  FileText,
 } from "lucide-vue-next";
 import AppTopbar from "../../components/features/AppTopbar.vue";
 
@@ -378,12 +379,26 @@ onMounted(() => {
               {{ project.clientName }}
             </p>
 
-            <!-- ACTIVE Badge -->
-            <div class="mt-3">
+            <!-- ACTIVE/COMPLETED Badge -->
+            <div class="mt-3 flex items-center gap-2">
               <span
-                class="inline-block bg-[#DCFCE7] text-[#166534] border-2 border-[#1A1A1A] px-2 py-0.5 font-['JetBrains_Mono',monospace] text-[10px] uppercase tracking-wide rounded-none font-semibold"
+                :class="[
+                  'inline-block border-2 border-[#1A1A1A] px-2 py-0.5 font-[\'JetBrains_Mono\',monospace] text-[10px] uppercase tracking-wide rounded-none font-semibold',
+                  project.status === 'COMPLETED'
+                    ? 'bg-[#DCCCFF] text-[#1A1A1A]'
+                    : 'bg-[#DCFCE7] text-[#166534]',
+                ]"
               >
-                ACTIVE
+                {{ project.status }}
+              </span>
+              <!-- Document Indicator (hanya muncul jika ada dokumen) -->
+              <span
+                class="inline-flex items-center gap-1.5 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-2 py-0.5 font-['JetBrains_Mono',monospace] text-[10px] font-bold rounded-none"
+                :class="(project.documentCount ?? 0) === 0 ? 'opacity-40' : ''"
+                title="Attached Documents"
+              >
+                <FileText class="w-3.5 h-3.5" />
+                {{ project.documentCount ?? 0 }}
               </span>
             </div>
           </div>
