@@ -9,6 +9,7 @@ import type {
 } from "../../types/api";
 import UiQuotaBar from "../../components/ui/UiQuotaBar.vue";
 import ProjectDocumentModal from "../../components/features/ProjectDocumentModal.vue";
+import ManageProjectModal from "../../components/features/ManageProjectModal.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -30,12 +31,23 @@ const feedbackSection = ref<HTMLElement | null>(null);
 // Document modal state
 const isDocModalOpen = ref(false);
 
+// Manage Project modal state
+const isManageProjectModalOpen = ref(false);
+
 function openDocModal() {
   isDocModalOpen.value = true;
 }
 
 function closeDocModal() {
   isDocModalOpen.value = false;
+}
+
+function openManageProjectModal() {
+  isManageProjectModalOpen.value = true;
+}
+
+function closeManageProjectModal() {
+  isManageProjectModalOpen.value = false;
 }
 
 async function fetchProjectDetail() {
@@ -95,6 +107,10 @@ const progressPercent = computed(() => {
 
 const isQuotaExhausted = computed(() => {
   return project.value && project.value.remainingRevisions === 0;
+});
+
+const isCompleted = computed(() => {
+  return project.value?.status === "COMPLETED";
 });
 
 // Pagination for Recent Revision Batches
@@ -174,6 +190,10 @@ function handleRetryFeedback() {
 onMounted(() => {
   fetchProjectDetail();
 });
+
+function handleProjectDeleted() {
+  router.push("/projects");
+}
 </script>
 
 <template>
@@ -190,7 +210,7 @@ onMounted(() => {
       </router-link>
 
       <button
-        v-if="project"
+        v-if="project && !isCompleted"
         @click="scrollToFeedback"
         class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-2.5 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"
       >
@@ -219,11 +239,19 @@ onMounted(() => {
     <div v-else-if="project" class="px-8 md:px-12 py-8">
       <!-- ── 2. HEADER ─────────────────────────────────────────── -->
       <div class="border-b-2 border-[#1A1A1A] pb-6 mb-8">
-        <h1
-          class="font-['Baskervville',serif] text-5xl font-normal leading-[1.1] tracking-tight text-[#1A1A1A]"
-        >
-          {{ project.name }}
-        </h1>
+        <div class="flex items-center gap-4">
+          <h1
+            class="font-['Baskervville',serif] text-5xl font-normal leading-[1.1] tracking-tight text-[#1A1A1A]"
+          >
+            {{ project.name }}
+          </h1>
+          <span
+            v-if="project.status === 'COMPLETED'"
+            class="bg-[#DCCCFF] text-[#1A1A1A] border-2 border-[#1A1A1A] px-2 py-0.5 font-['JetBrains_Mono',monospace] text-xs uppercase font-bold rounded-none"
+          >
+            [COMPLETED]
+          </span>
+        </div>
         <div class="flex flex-wrap items-center gap-3 mt-3">
           <!-- Client tag (lavender) -->
           <span
@@ -559,12 +587,22 @@ onMounted(() => {
               </div>
             </div>
 
-            <!-- MANAGE PROJECT button -->
+            <!-- MANAGE DOCUMENTS button -->
             <button
               type="button"
               @click="openDocModal"
               title="Manage attached project documents"
               class="w-full mt-5 bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"
+            >
+              MANAGE DOCUMENTS
+            </button>
+
+            <!-- MANAGE PROJECT button (Neo-Brutalist theme) -->
+            <button
+              type="button"
+              @click="openManageProjectModal"
+              title="Manage project settings (status, delete)"
+              class="w-full mt-3 bg-[#DCCCFF] text-[#1A1A1A] border-2 border-[#1A1A1A] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"
             >
               MANAGE PROJECT
             </button>
@@ -577,11 +615,23 @@ onMounted(() => {
             :open="isDocModalOpen"
             @close="closeDocModal"
           />
+
+          <!-- ── MANAGE PROJECT MODAL ─────────────────────────── -->
+          <ManageProjectModal
+            v-if="project"
+            :project="project"
+            :revision-batch-count="batches.length"
+            :open="isManageProjectModalOpen"
+            @close="closeManageProjectModal"
+            @project-updated="fetchProjectDetail"
+            @project-deleted="handleProjectDeleted"
+          />
         </div>
       </div>
 
       <!-- ── 5. SUBMIT REVISION FEEDBACK SECTION ────────────────── -->
       <div
+        v-if="project.status === 'ACTIVE'"
         ref="feedbackSection"
         id="submit-feedback-section"
         class="border-t-2 border-[#1A1A1A] pt-8"
@@ -672,6 +722,19 @@ onMounted(() => {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Closed Banner for Completed Projects -->
+      <div
+        v-else
+        class="border-2 border-[#1A1A1A] bg-[#FDFFB6] p-6 text-center rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] mt-8"
+      >
+        <p class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#1A1A1A] font-bold mb-1">
+          PROJECT COMPLETED
+        </p>
+        <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]">
+          PROJECT COMPLETED — This project is closed. Reopen the project via Manage Project to submit additional revision work.
+        </p>
       </div>
     </div>
   </section>

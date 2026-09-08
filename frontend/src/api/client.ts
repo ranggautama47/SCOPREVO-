@@ -159,6 +159,22 @@ export const apiClient = {
         method: 'POST',
         body: JSON.stringify({ rawInput }),
       }),
+    // PATCH /api/projects/:id
+    update: (id: string, data: {
+      name?: string;
+      clientName?: string;
+      totalAllowedRevisions?: number;
+      status?: 'ACTIVE' | 'COMPLETED';
+    }) =>
+      request<{ project: Project }>(`/projects/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
+      }),
+    // DELETE /api/projects/:id (Backend returns 204 No Content)
+    remove: (id: string) =>
+      request<void>(`/projects/${id}`, {
+        method: 'DELETE',
+      }),
   },
   batches: {
     getDetail: (id: string): Promise<{ batch: RevisionBatchDetail }> =>

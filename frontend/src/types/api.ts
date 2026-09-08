@@ -24,6 +24,8 @@ export interface Project {
   usedRevisions: number;
   remainingRevisions: number;
   createdAt: string;
+  status: 'ACTIVE' | 'COMPLETED';
+  documentCount?: number;
 }
 
 export interface RevisionItem {

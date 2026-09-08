@@ -143,6 +143,11 @@ async function handleShare() {
     showModal.value = true;
   } catch (err: unknown) {
     if (err instanceof ApiError) {
+      if (err.code === "PROJECT_COMPLETED") {
+        shareError.value = "Project is completed. Reopen the project before sharing this batch.";
+        isSharing.value = false;
+        return;
+      }
       if (err.code === "INVALID_STATE" || err.status === 409) {
         await fetchBatchDetail(batchId.value);
         if (!effectivePortalUrl.value) {
