@@ -9,6 +9,7 @@ export const updateProjectSchema = z
     name: z.string().min(1).max(200).optional(),
     clientName: z.string().min(1).max(200).optional(),
     totalAllowedRevisions: z.number().int().min(1).max(100).optional(),
+    status: z.enum(['ACTIVE', 'COMPLETED']).optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: 'At least one field must be provided to update.',

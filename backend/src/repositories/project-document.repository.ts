@@ -46,4 +46,20 @@ export const projectDocumentRepository = {
     const result = await db.query('DELETE FROM project_document WHERE id = $1', [documentId]);
     return (result.rowCount ?? 0) > 0;
   },
+
+  async listStoragePathsByProjectId(projectId: string): Promise<string[]> {
+    const result = await db.query<{ storage_path: string }>(
+      `SELECT storage_path FROM project_document WHERE project_id = $1`,
+      [projectId],
+    );
+    return result.rows.map((r) => r.storage_path);
+  },
+
+  async deleteAllForProjectWithClient(client: { query: (sql: string, params: unknown[]) => Promise<{ rowCount?: number }> }, projectId: string): Promise<number> {
+    const result = await client.query(
+      `DELETE FROM project_document WHERE project_id = $1`,
+      [projectId],
+    );
+    return result.rowCount ?? 0;
+  },
 };

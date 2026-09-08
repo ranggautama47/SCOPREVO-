@@ -1,5 +1,6 @@
 ﻿import { db } from '../config/database';
-import { ProjectRow } from '../types/db.types';
+import { PoolClient } from 'pg';
+import { ProjectRow, ProjectStatus } from '../types/db.types';
 export interface ProjectWithQuota extends ProjectRow {
   used_revisions: number;
   remaining_revisions: number;
@@ -8,7 +9,7 @@ export const projectRepository = {
   async findAllByAccountId(accountId: string): Promise<ProjectWithQuota[]> {
     const result = await db.query<ProjectWithQuota>(
 `SELECT
-         p.id, p.account_id, p.name, p.client_name, p.total_allowed_revisions, p.created_at,
+         p.id, p.account_id, p.name, p.client_name, p.total_allowed_revisions, p.status, p.created_at,
          COALESCE((SELECT COUNT(*)::int FROM revision_batch rb WHERE rb.project_id = p.id AND rb.status = 'APPROVED'), 0) AS used_revisions,
          p.total_allowed_revisions - COALESCE((SELECT COUNT(*)::int FROM revision_batch rb WHERE rb.project_id = p.id AND rb.status = 'APPROVED'), 0) AS remaining_revisions
        FROM project p WHERE p.account_id = $1 ORDER BY p.created_at DESC`,
@@ -19,7 +20,7 @@ export const projectRepository = {
   async findById(projectId: string): Promise<ProjectWithQuota | null> {
     const result = await db.query<ProjectWithQuota>(
 `SELECT
-         p.id, p.account_id, p.name, p.client_name, p.total_allowed_revisions, p.created_at,
+         p.id, p.account_id, p.name, p.client_name, p.total_allowed_revisions, p.status, p.created_at,
          COALESCE((SELECT COUNT(*)::int FROM revision_batch rb WHERE rb.project_id = p.id AND rb.status = 'APPROVED'), 0) AS used_revisions,
          p.total_allowed_revisions - COALESCE((SELECT COUNT(*)::int FROM revision_batch rb WHERE rb.project_id = p.id AND rb.status = 'APPROVED'), 0) AS remaining_revisions
        FROM project p WHERE p.id = $1 LIMIT 1`,
@@ -30,7 +31,7 @@ export const projectRepository = {
   async create(data: { accountId: string; name: string; clientName: string; totalAllowedRevisions: number }): Promise<ProjectRow> {
     const result = await db.query<ProjectRow>(
       `INSERT INTO project (account_id, name, client_name, total_allowed_revisions) VALUES ($1, $2, $3, $4)
-       RETURNING id, account_id, name, client_name, total_allowed_revisions, created_at`,
+       RETURNING id, account_id, name, client_name, total_allowed_revisions, status, created_at`,
       [data.accountId, data.name, data.clientName, data.totalAllowedRevisions],
     );
     return result.rows[0];
@@ -46,8 +47,16 @@ export const projectRepository = {
     values.push(projectId);
     const result = await db.query<ProjectRow>(
       `UPDATE project SET ${setClauses.join(', ')} WHERE id = $${paramIndex}
-       RETURNING id, account_id, name, client_name, total_allowed_revisions, created_at`,
+       RETURNING id, account_id, name, client_name, total_allowed_revisions, status, created_at`,
       values,
+    );
+    return result.rows[0] ?? null;
+  },
+  async updateStatus(projectId: string, status: ProjectStatus): Promise<ProjectRow | null> {
+    const result = await db.query<ProjectRow>(
+      `UPDATE project SET status = $1 WHERE id = $2
+       RETURNING id, account_id, name, client_name, total_allowed_revisions, status, created_at`,
+      [status, projectId],
     );
     return result.rows[0] ?? null;
   },
@@ -55,11 +64,21 @@ export const projectRepository = {
     const result = await db.query('DELETE FROM project WHERE id = $1', [projectId]);
     return (result.rowCount ?? 0) > 0;
   },
-async countRevisionBatches(projectId: string): Promise<number> {
+  async deleteWithClient(client: PoolClient, projectId: string): Promise<boolean> {
+    const result = await client.query('DELETE FROM project WHERE id = $1', [projectId]);
+    return (result.rowCount ?? 0) > 0;
+  },
+  async countPendingConfirmationBatches(projectId: string): Promise<number> {
+    const result = await db.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count FROM revision_batch WHERE project_id = $1 AND status = 'PENDING_CONFIRMATION'`,
+      [projectId]
+    );
+    return parseInt(result.rows[0]?.count ?? '0', 10);
+  },
+  async countRevisionBatches(projectId: string): Promise<number> {
     const result = await db.query<{ count: string }>('SELECT COUNT(*)::text AS count FROM revision_batch WHERE project_id = $1', [projectId]);
     return parseInt(result.rows[0]?.count ?? '0', 10);
   },
-
   async countApprovedBatches(projectId: string): Promise<number> {
     const result = await db.query<{ count: string }>(
       `SELECT COUNT(*)::text AS count FROM revision_batch WHERE project_id = $1 AND status = 'APPROVED'`,

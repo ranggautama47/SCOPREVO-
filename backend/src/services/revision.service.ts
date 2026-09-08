@@ -24,6 +24,7 @@ export interface RevisionBatchDetailDTO {
   status: 'DRAFT' | 'PENDING_CONFIRMATION' | 'APPROVED';
   summary: string | null;
   items: RevisionItemDTO[];
+  magicToken?: string;
 }
 
 export interface RevisionBatchListDTO {
@@ -39,6 +40,9 @@ function toBatchDetailDTO(batch: RevisionBatchRow, items: RevisionItemRow[]): Re
     projectId: batch.project_id,
     status: batch.status,
     summary: batch.ai_summary,
+    ...(batch.status === 'PENDING_CONFIRMATION' && batch.magic_token
+      ? { magicToken: batch.magic_token }
+      : {}),
     items: items.map((item) => ({
       id: item.id,
       description: item.description,
@@ -98,7 +102,15 @@ export const revisionService = {
       throw new NotFoundError('Project not found.');
     }
 
-    // 2. Quota gate: check remaining revisions (only APPROVED batches count)
+    // 2. Completed-project guard: reject BEFORE quota check and BEFORE AI call
+    if (project.status === 'COMPLETED') {
+      throw new ConflictError(
+        'PROJECT_COMPLETED',
+        'Cannot create revision batch for a completed project. Reopen the project first.',
+      );
+    }
+
+    // 3. Quota gate: check remaining revisions (only APPROVED batches count)
     const usedRevisions = await projectRepository.countApprovedBatches(projectId);
     const totalAllowed = project.total_allowed_revisions;
     const remaining = totalAllowed - usedRevisions;
@@ -173,6 +185,13 @@ export const revisionService = {
     const project = await projectRepository.findById(batch.project_id);
     if (!project || project.account_id !== accountId) {
       throw new NotFoundError('Revision batch not found.');
+    }
+
+    if (project.status === 'COMPLETED') {
+      throw new ConflictError(
+        'PROJECT_COMPLETED',
+        'Cannot share a batch for a completed project. Reopen the project first.',
+      );
     }
 
     if (batch.status !== 'DRAFT') {

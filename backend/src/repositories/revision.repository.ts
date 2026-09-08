@@ -58,6 +58,22 @@ export const revisionBatchRepository = {
     return result.rows;
   },
 
+  async deleteAllItemsForProjectWithClient(client: PoolClient, projectId: string): Promise<number> {
+    const result = await client.query(
+      `DELETE FROM revision_item WHERE revision_batch_id IN (SELECT id FROM revision_batch WHERE project_id = $1)`,
+      [projectId],
+    );
+    return result.rowCount ?? 0;
+  },
+
+  async deleteAllBatchesForProjectWithClient(client: PoolClient, projectId: string): Promise<number> {
+    const result = await client.query(
+      `DELETE FROM revision_batch WHERE project_id = $1`,
+      [projectId],
+    );
+    return result.rowCount ?? 0;
+  },
+
   async transitionStatus(
     batchId: string,
     fromStatus: RevisionBatchRow['status'],

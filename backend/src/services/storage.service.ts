@@ -62,7 +62,15 @@ export async function uploadDocumentBuffer(
   return { storagePath, mimeType, ext };
 }
 
+let _testDeleteHook: ((storagePath: string) => Promise<DeleteResult>) | null = null;
+export function setDeleteHookForTest(hook: ((storagePath: string) => Promise<DeleteResult>) | null): void {
+  _testDeleteHook = hook;
+}
+
 export async function deleteDocumentObject(storagePath: string): Promise<DeleteResult> {
+  if (_testDeleteHook) {
+    return _testDeleteHook(storagePath);
+  }
   const { error, data } = await supabase.storage
     .from('project-documents')
     .remove([storagePath]);

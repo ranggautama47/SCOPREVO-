@@ -6,14 +6,20 @@ export interface AccountRow {
   name: string;
   email: string;
   password_hash: string;
+  email_verified: boolean;
+  email_verification_token: string | null;
+  email_verification_expires_at: Date | null;
   created_at: Date;
 }
+export type ProjectStatus = 'ACTIVE' | 'COMPLETED';
+
 export interface ProjectRow {
   id: string;
   account_id: string;
   name: string;
   client_name: string;
   total_allowed_revisions: number;
+  status: ProjectStatus;
   created_at: Date;
 }
 export interface RevisionBatchRow {
