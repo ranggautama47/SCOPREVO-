@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { accountRepository } from '../repositories/account.repository';
 import { env } from '../config/env';
 import { ConflictError, UnauthorizedError, NotFoundError, TooManyRequestsError } from '../middleware/error.middleware';
-import { sendVerificationEmail } from './mailer.service';
+import { sendPasswordChangedEmail, sendVerificationEmail, sendWelcomeEmail } from './mailer.service';
 
 const SALT_ROUNDS = 12;
 export interface AuthResult {
@@ -19,6 +19,11 @@ export const authService = {
     }
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
     const row = await accountRepository.create({ name, email, passwordHash });
+    try {
+      await sendWelcomeEmail(email, name);
+    } catch (err) {
+      console.warn(`[MAILER] Welcome email failed for ${email}: ${(err as Error).message}`);
+    }
     const token = issueToken(row.id);
     return { token, account: { id: row.id, name: row.name, email: row.email, createdAt: row.created_at, emailVerified: row.email_verified } };
   },
@@ -46,6 +51,11 @@ export const authService = {
     }
     const newPasswordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
     await accountRepository.updatePassword(accountId, newPasswordHash);
+    try {
+      await sendPasswordChangedEmail(row.email);
+    } catch (err) {
+      console.warn(`[MAILER] Password-changed email failed for ${row.email}: ${(err as Error).message}`);
+    }
   },
 
   async requestEmailVerification(accountId: string): Promise<{ message: string; deliveredVia: 'smtp' | 'console'; expiresAt: Date }> {
@@ -85,6 +95,14 @@ export const authService = {
     }
     await accountRepository.markEmailVerified(row.id);
     return { message: 'Email verified successfully.' };
+  },
+
+  async me(accountId: string): Promise<{ account: { id: string; name: string; email: string; createdAt: Date; emailVerified: boolean } }> {
+    const row = await accountRepository.findById(accountId);
+    if (!row) {
+      throw new NotFoundError('Account not found.');
+    }
+    return { account: { id: row.id, name: row.name, email: row.email, createdAt: row.created_at, emailVerified: row.email_verified } };
   },
 };
 function issueToken(accountId: string): string {
