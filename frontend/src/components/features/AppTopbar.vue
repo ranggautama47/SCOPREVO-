@@ -3,7 +3,8 @@ import { onMounted, ref, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import { Bell } from "lucide-vue-next";
 import { useAuthStore } from "../../stores/auth";
-import { apiClient } from "../../api/client";
+import { swrService } from "../../services/resilience/swr.service";
+import { setupNetworkListeners } from "../../services/resilience/network-state";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -15,11 +16,15 @@ const bellRef = ref<HTMLElement | null>(null);
 const userRef = ref<HTMLElement | null>(null);
 
 onMounted(async () => {
+  setupNetworkListeners();
   try {
-    const overview = await apiClient.overview.get();
-    pendingCount.value = overview.pendingConfirmations ?? 0;
+    const accountId = authStore.account?.id;
+    if (accountId) {
+      const overview = await swrService.fetchOverview(accountId);
+      pendingCount.value = overview.pendingConfirmations ?? 0;
+    }
   } catch {
-    pendingCount.value = 0; // shell tidak boleh pernah merobohkan halaman
+    pendingCount.value = 0;
   }
   document.addEventListener("click", handleClickOutside);
 });

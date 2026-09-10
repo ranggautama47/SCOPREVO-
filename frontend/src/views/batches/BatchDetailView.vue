@@ -8,9 +8,12 @@ import type {
   ScopeStatus,
   ShareBatchResponse,
 } from "../../types/api";
+import { useAuthStore } from "../../stores/auth";
+import { swrService } from "../../services/resilience/swr.service";
 
 const route = useRoute();
 const router = useRouter();
+const authStore = useAuthStore();
 
 const batchId = computed(() => route.params.id as string);
 
@@ -40,9 +43,15 @@ async function fetchBatchDetail(id: string) {
   isLoading.value = true;
   notFound.value = false;
   networkError.value = false;
+  const accountId = authStore.account?.id;
+  if (!accountId) {
+    notFound.value = true;
+    isLoading.value = false;
+    return;
+  }
   try {
-    const res = await apiClient.batches.getDetail(id);
-    batchData.value = res.batch;
+    const batch = await swrService.fetchBatchDetail(accountId, id);
+    batchData.value = batch;
   } catch (err: unknown) {
     if (
       err instanceof ApiError &&

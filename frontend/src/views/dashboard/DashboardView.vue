@@ -2,8 +2,8 @@
 import { onMounted, ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/auth";
-import { apiClient } from "../../api/client";
 import type { OverviewData, Project } from "../../types/api";
+import { swrService } from "../../services/resilience/swr.service";
 import {
   FolderKanban,
   History,
@@ -60,13 +60,19 @@ const revisionsLeft = computed(() => {
 async function fetchDashboardData() {
   isLoading.value = true;
   error.value = null;
+  const accountId = authStore.account?.id;
+  if (!accountId) {
+    error.value = "Account not found";
+    isLoading.value = false;
+    return;
+  }
   try {
     const [overviewRes, projectsRes] = await Promise.all([
-      apiClient.overview.get(),
-      apiClient.projects.list(),
+      swrService.fetchOverview(accountId),
+      swrService.fetchProjects(accountId),
     ]);
     overviewData.value = overviewRes;
-    projects.value = projectsRes.projects;
+    projects.value = projectsRes;
   } catch (err: any) {
     error.value = err.message || "Failed to load dashboard";
   } finally {
@@ -118,7 +124,7 @@ onMounted(() => {
 
 <template>
   <section class="p-6 md:p-10 max-w-[1300px] mx-auto min-h-screen bg-[#FAFAF9]">
-    <!-- TOP BAR -->
+     <!-- TOP BAR -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-4">
         <!-- Breadcrumb -->

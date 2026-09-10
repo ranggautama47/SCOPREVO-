@@ -7,13 +7,16 @@ import type {
   RevisionBatchSummary,
   RevisionBatchStatus,
 } from "../../types/api";
+import { useAuthStore } from "../../stores/auth";
+import { swrService } from "../../services/resilience/swr.service";
+import { networkState } from "../../services/resilience/network-state";
 import UiQuotaBar from "../../components/ui/UiQuotaBar.vue";
 import ProjectDocumentModal from "../../components/features/ProjectDocumentModal.vue";
 import ManageProjectModal from "../../components/features/ManageProjectModal.vue";
 
 const route = useRoute();
 const router = useRouter();
-
+const authStore = useAuthStore();
 const projectId = computed(() => route.params.id as string);
 
 const project = ref<Project | null>(null);
@@ -34,6 +37,11 @@ const isDocModalOpen = ref(false);
 // Manage Project modal state
 const isManageProjectModalOpen = ref(false);
 
+// Network status
+const isMutationsDisabled = computed(() =>
+  ['OFFLINE', 'BACKEND_DEGRADED'].includes(networkState.value.status),
+);
+
 function openDocModal() {
   isDocModalOpen.value = true;
 }
@@ -53,13 +61,19 @@ function closeManageProjectModal() {
 async function fetchProjectDetail() {
   isLoading.value = true;
   error.value = null;
+  const accountId = authStore.account?.id;
+  if (!accountId) {
+    error.value = "Account not found";
+    isLoading.value = false;
+    return;
+  }
   try {
     const [projectRes, batchesRes] = await Promise.all([
-      apiClient.projects.getDetail(projectId.value),
-      apiClient.projects.getBatches(projectId.value),
+      swrService.fetchProjectDetail(accountId, projectId.value),
+      swrService.fetchProjectBatches(accountId, projectId.value),
     ]);
-    project.value = projectRes.project;
-    batches.value = batchesRes.batches;
+    project.value = projectRes;
+    batches.value = batchesRes;
   } catch (err: unknown) {
     error.value =
       err instanceof ApiError ? err.message : "Failed to load project detail";
@@ -142,6 +156,15 @@ async function handleSubmitFeedback() {
     return;
   }
 
+  if (isMutationsDisabled.value) {
+    errorMsg.value =
+      networkState.value.status === 'OFFLINE'
+        ? 'Cannot submit feedback while offline.'
+        : 'Cannot submit feedback. Backend is degraded.';
+    errorCode.value = 'NETWORK_ERROR';
+    return;
+  }
+
   isSubmitting.value = true;
   errorMsg.value = "";
   errorCode.value = null;
@@ -212,7 +235,8 @@ function handleProjectDeleted() {
       <button
         v-if="project && !isCompleted"
         @click="scrollToFeedback"
-        class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-2.5 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"
+        :disabled="isMutationsDisabled"
+        class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-2.5 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
         + SUBMIT FEEDBACK
       </button>

@@ -3,6 +3,8 @@ import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { apiClient } from "../../api/client";
 import type { Project } from "../../types/api";
+import { useAuthStore } from "../../stores/auth";
+import { swrService } from "../../services/resilience/swr.service";
 import {
   FolderKanban,
   History,
@@ -15,6 +17,7 @@ import {
 import AppTopbar from "../../components/features/AppTopbar.vue";
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 const projects = ref<Project[]>([]);
 const isLoading = ref(true);
@@ -87,9 +90,14 @@ const totalUsedPercent = computed(() => {
 async function fetchProjects() {
   isLoading.value = true;
   error.value = null;
+  const accountId = authStore.account?.id;
+  if (!accountId) {
+    error.value = "Account not found";
+    isLoading.value = false;
+    return;
+  }
   try {
-    const res = await apiClient.projects.list();
-    projects.value = res.projects;
+    projects.value = await swrService.fetchProjects(accountId);
   } catch (err: any) {
     error.value = err.message || "Failed to load projects";
   } finally {

@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "../stores/auth";
+import NetworkState from "@/components/features/NetworkState.vue";
 import {
   LayoutDashboard,
   FolderKanban,
@@ -156,6 +157,7 @@ function isActive(path: string): boolean {
 
     <!-- Main Canvas -->
     <main class="flex-1 min-h-screen bg-canvasBg overflow-x-hidden">
+      <NetworkState />
       <router-view />
     </main>
   </div>

@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import { apiClient } from "../../api/client";
-import type { Project, RevisionBatchSummary, RevisionBatchStatus } from "../../types/api";
+import type { RevisionBatchSummary, RevisionBatchStatus } from "../../types/api";
+import { useAuthStore } from "../../stores/auth";
+import { swrService } from "../../services/resilience/swr.service";
 import UiStatusBadge from "../../components/ui/UiStatusBadge.vue";
 import UiEmptyState from "../../components/ui/UiEmptyState.vue";
 import AppTopbar from "../../components/features/AppTopbar.vue";
 import { Search } from "lucide-vue-next";
 
 const router = useRouter();
+const authStore = useAuthStore();
 
 interface BatchWithProject extends RevisionBatchSummary {
   projectName: string;
@@ -32,18 +34,23 @@ const STATUS_TABS: Array<RevisionBatchStatus | "ALL"> = [
 async function fetchHistory() {
   isLoading.value = true;
   error.value = null;
+  const accountId = authStore.account?.id;
+  if (!accountId) {
+    error.value = "Account not found";
+    isLoading.value = false;
+    return;
+  }
   try {
-    const projectsRes = await apiClient.projects.list();
-    const projects: Project[] = projectsRes.projects;
+    const projects = await swrService.fetchProjects(accountId);
 
     const batchResults = await Promise.all(
-      projects.map((p) => apiClient.projects.getBatches(p.id)),
+      projects.map((p) => swrService.fetchProjectBatches(accountId, p.id)),
     );
 
     const flat: BatchWithProject[] = [];
-    batchResults.forEach((res, idx) => {
+    batchResults.forEach((batches, idx) => {
       const project = projects[idx];
-      res.batches.forEach((b) => {
+      batches.forEach((b) => {
         flat.push({
           ...b,
           projectName: project.name,
