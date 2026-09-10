@@ -33,4 +33,6 @@ export const env = {
   SMTP_PASS: process.env.SMTP_PASS ?? '',
   APP_BASE_URL: process.env.APP_BASE_URL ?? 'http://localhost:5173',
   MAIL_FROM: process.env.MAIL_FROM ?? 'noreply@scoprevo.com',
+  REDIS_URL: process.env.REDIS_URL ?? 'redis://127.0.0.1:6379',
+  REDIS_ENABLED: process.env.REDIS_ENABLED !== 'false',
 } as const;
