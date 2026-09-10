@@ -129,6 +129,10 @@ export const apiClient = {
       request<{ message: string }>(`/auth/verify-email/${token}`, {
         method: 'GET',
       }),
+    me: (): Promise<{ account: { id: string; name: string; email: string; createdAt: string; emailVerified: boolean } }> =>
+      request<{ account: { id: string; name: string; email: string; createdAt: string; emailVerified: boolean } }>('/auth/me', {
+        method: 'GET',
+      }),
   },
   overview: {
     get: (): Promise<OverviewData> =>

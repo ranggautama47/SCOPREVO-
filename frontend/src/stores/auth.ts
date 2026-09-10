@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { apiClient } from '../api/client';
 import type { UserAccount } from '../types/api';
+import { purgeCache } from '../services/resilience/cache.repository';
 
 const TOKEN_KEY = 'scoprevo_jwt';
 const ACCOUNT_KEY = 'scoprevo_account';
@@ -75,8 +76,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function refreshAccount(): Promise<void> {
+    if (!token.value) return;
+    try {
+      const response = await apiClient.auth.me();
+      setAccount(response.account);
+    } catch {
+      // silently ignore — don't block render
+    }
+  }
+
   function logout() {
     clearToken();
+    purgeCache();
   }
 
   return {

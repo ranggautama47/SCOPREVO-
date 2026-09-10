@@ -38,4 +38,11 @@ export const authController = {
       res.status(200).json({ ok: true, ...result });
     } catch (err) { next(err); }
   },
+  async me(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const accountId = req.accountId!;
+      const result = await authService.me(accountId);
+      res.status(200).json(result);
+    } catch (err) { next(err); }
+  },
 };

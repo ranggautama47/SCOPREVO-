@@ -1,4 +1,4 @@
-﻿import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction } from 'express';
 export class AppError extends Error {
   constructor(
     public readonly code: string,
@@ -44,6 +44,12 @@ export class TooManyRequestsError extends AppError {
   constructor(code: string, message: string, details?: unknown) {
     super(code, message, 429, details);
     this.name = 'TooManyRequestsError';
+  }
+}
+export class ServiceUnavailableError extends AppError {
+  constructor(message = 'Service temporarily unavailable.', code = 'SERVICE_UNAVAILABLE', details?: unknown) {
+    super(code, message, 503, details);
+    this.name = 'ServiceUnavailableError';
   }
 }
 export function errorMiddleware(

@@ -222,6 +222,35 @@ async function runTests() {
     testResults['TEST 12'] = { pass: test12a && test12b, note: `register emailVerified: ${reg12.body?.account?.emailVerified}, login emailVerified: ${login12.body?.account?.emailVerified}` };
     console.log(`TEST 12: ${testResults['TEST 12'].pass ? 'PASS' : 'FAIL'} — ${testResults['TEST 12'].note}`);
 
+    // -------------------------------------------------------------
+    // TEST 13: GET /me tanpa token -> 401
+    // -------------------------------------------------------------
+    console.log('\n--- Running TEST 13: GET /me without token ---');
+    const me13 = await request('GET', '/api/auth/me');
+    const test13Pass = me13.status === 401 && me13.body?.error?.code === 'UNAUTHORIZED';
+    testResults['TEST 13'] = { pass: test13Pass, note: `status: ${me13.status}, code: ${me13.body?.error?.code}` };
+    console.log(`TEST 13: ${testResults['TEST 13'].pass ? 'PASS' : 'FAIL'} — ${testResults['TEST 13'].note}`);
+
+    // -------------------------------------------------------------
+    // TEST 14: GET /me dengan token setelah verify -> emailVerified: true
+    // -------------------------------------------------------------
+    console.log('\n--- Running TEST 14: GET /me after verify ---');
+    // Request verification, then verify token
+    const ve14 = await request('POST', '/api/auth/verification-email', {}, token);
+    const acc14 = await accountRepository.findById(accountId);
+    const token14 = acc14?.email_verification_token;
+    await request('GET', `/api/auth/verify-email/${token14}`);
+    // Now GET /me should return emailVerified: true
+    const me14 = await request('GET', '/api/auth/me', undefined, token);
+    const test14a = me14.status === 200;
+    const test14b = me14.body?.account?.emailVerified === true;
+    const test14c = me14.body?.account?.id === accountId;
+    const test14d = me14.body?.account?.name !== undefined;
+    const test14e = me14.body?.account?.email !== undefined;
+    const test14f = me14.body?.account?.createdAt !== undefined;
+    testResults['TEST 14'] = { pass: test14a && test14b && test14c && test14d && test14e && test14f, note: `status: ${me14.status}, emailVerified: ${me14.body?.account?.emailVerified}, id match: ${test14c}, has name: ${test14d}, has email: ${test14e}, has createdAt: ${test14f}` };
+    console.log(`TEST 14: ${testResults['TEST 14'].pass ? 'PASS' : 'FAIL'} — ${testResults['TEST 14'].note}`);
+
   } catch (err) {
     console.error('[FATAL]', err);
   } finally {

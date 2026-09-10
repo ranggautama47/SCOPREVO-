@@ -2,6 +2,7 @@
 import { ref, onMounted, computed } from "vue";
 import { useAuthStore } from "../../stores/auth";
 import { apiClient, ApiError } from "../../api/client";
+import { networkState } from "../../services/resilience/network-state";
 import AppTopbar from "../../components/features/AppTopbar.vue";
 import {
   Eye,
@@ -16,6 +17,10 @@ import {
 } from "lucide-vue-next";
 
 const authStore = useAuthStore();
+
+const isMutationsDisabled = computed(() =>
+  ['OFFLINE', 'BACKEND_DEGRADED'].includes(networkState.value.status),
+);
 
 const DEFAULT_QUOTA_KEY = "scoprevo_default_revisions";
 
@@ -55,9 +60,14 @@ function loadDefaultQuota() {
 
 onMounted(() => {
   loadDefaultQuota();
+  authStore.refreshAccount();
 });
 
 async function handleSendVerification() {
+  if (isMutationsDisabled.value) {
+    verificationMessage.value = "Tidak dapat mengirim email verifikasi saat offline / sistem terdegradasi.";
+    return;
+  }
   verificationMessage.value = null;
   isSendingVerification.value = true;
   try {
@@ -94,6 +104,10 @@ function validatePasswordForm(): string | null {
 }
 
 async function handleChangePassword() {
+  if (isMutationsDisabled.value) {
+    passwordError.value = "Tidak dapat mengubah kata sandi saat offline / sistem terdegradasi.";
+    return;
+  }
   passwordError.value = null;
   passwordSuccess.value = null;
 
