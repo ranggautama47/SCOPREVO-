@@ -1,44 +1,111 @@
-﻿import { db } from '../config/database';
+import { db } from '../config/database';
 import { projectRepository, ProjectWithQuota } from '../repositories/project.repository';
 import { revisionBatchRepository } from '../repositories/revision.repository';
 import { projectDocumentRepository } from '../repositories/project-document.repository';
 import { deleteDocumentObject } from './storage.service';
-import { NotFoundError, ForbiddenError, ConflictError } from '../middleware/error.middleware';
+import { NotFoundError, ConflictError } from '../middleware/error.middleware';
 import { CreateProjectInput, UpdateProjectInput } from '../validators/project.schema';
 import { ProjectStatus } from '../types/db.types';
+import { cacheService } from './cache.service';
+
 export interface ProjectDTO {
-  id: string; accountId: string; name: string; clientName: string;
-  totalAllowedRevisions: number; usedRevisions: number; remainingRevisions: number;
-  status: ProjectStatus; createdAt: Date;
+  id: string;
+  accountId: string;
+  name: string;
+  clientName: string;
+  totalAllowedRevisions: number;
+  usedRevisions: number;
+  remainingRevisions: number;
+  status: ProjectStatus;
+  createdAt: Date;
 }
+
+const PROJECT_LIST_TTL = 30; // 30 seconds
+const PROJECT_DETAIL_TTL = 60; // 60 seconds
+
 function toDTO(row: ProjectWithQuota): ProjectDTO {
   return {
-    id: row.id, accountId: row.account_id, name: row.name, clientName: row.client_name,
-    totalAllowedRevisions: row.total_allowed_revisions, usedRevisions: row.used_revisions,
-    remainingRevisions: row.remaining_revisions, status: row.status, createdAt: row.created_at,
+    id: row.id,
+    accountId: row.account_id,
+    name: row.name,
+    clientName: row.client_name,
+    totalAllowedRevisions: row.total_allowed_revisions,
+    usedRevisions: row.used_revisions,
+    remainingRevisions: row.remaining_revisions,
+    status: row.status,
+    createdAt: row.created_at,
   };
 }
+
 export const projectService = {
   async createProject(accountId: string, input: CreateProjectInput): Promise<ProjectDTO> {
-    const row = await projectRepository.create({ accountId, name: input.name, clientName: input.clientName, totalAllowedRevisions: input.totalAllowedRevisions });
-    return { id: row.id, accountId: row.account_id, name: row.name, clientName: row.client_name, totalAllowedRevisions: row.total_allowed_revisions, usedRevisions: 0, remainingRevisions: row.total_allowed_revisions, status: row.status, createdAt: row.created_at };
+    const row = await projectRepository.create({
+      accountId,
+      name: input.name,
+      clientName: input.clientName,
+      totalAllowedRevisions: input.totalAllowedRevisions,
+    });
+
+    // Invalidate affected caches: projects list and overview
+    await cacheService.invalidateAccountResources(accountId, ['projects', 'overview']);
+
+    return {
+      id: row.id,
+      accountId: row.account_id,
+      name: row.name,
+      clientName: row.client_name,
+      totalAllowedRevisions: row.total_allowed_revisions,
+      usedRevisions: 0,
+      remainingRevisions: row.total_allowed_revisions,
+      status: row.status,
+      createdAt: row.created_at,
+    };
   },
+
   async listProjects(accountId: string): Promise<ProjectDTO[]> {
+    const cacheKey = cacheService.buildKey(accountId, 'projects');
+    const cached = await cacheService.get<ProjectDTO[]>(cacheKey, accountId);
+    if (cached) {
+      return cached;
+    }
+
     const rows = await projectRepository.findAllByAccountId(accountId);
-    return rows.map(toDTO);
+    const result = rows.map(toDTO);
+
+    await cacheService.set(cacheKey, result, PROJECT_LIST_TTL, accountId);
+    return result;
   },
+
   async getProject(projectId: string, accountId: string): Promise<ProjectDTO> {
+    // 1. Authorization: Fetch metadata or project from DB to verify ownership FIRST
+    const cacheKey = cacheService.buildKey(accountId, 'project', projectId);
+    const cached = await cacheService.get<ProjectDTO>(cacheKey, accountId);
+    if (cached) {
+      // Re-verify that cached object matches authorized accountId
+      if (cached.accountId === accountId) {
+        return cached;
+      }
+    }
+
     const row = await projectRepository.findById(projectId);
     if (!row) throw new NotFoundError('Project not found.');
     if (row.account_id !== accountId) throw new NotFoundError('Project not found.');
-    return toDTO(row);
+
+    const dto = toDTO(row);
+    await cacheService.set(cacheKey, dto, PROJECT_DETAIL_TTL, accountId);
+    return dto;
   },
-  async updateProject(projectId: string, accountId: string, input: UpdateProjectInput): Promise<ProjectDTO> {
+
+  async updateProject(
+    projectId: string,
+    accountId: string,
+    input: UpdateProjectInput,
+  ): Promise<ProjectDTO> {
     const existing = await projectRepository.findById(projectId);
     if (!existing) throw new NotFoundError('Project not found.');
     if (existing.account_id !== accountId) throw new NotFoundError('Project not found.');
 
-     // Handle status transition (if requested)
+    // Handle status transition (if requested)
     if (input.status !== undefined) {
       await transitionStatus(existing, input.status);
     }
@@ -59,8 +126,21 @@ export const projectService = {
 
     const refreshed = await projectRepository.findById(projectId);
     if (!refreshed) throw new NotFoundError('Project not found.');
-    return toDTO(refreshed);
+    const result = toDTO(refreshed);
+
+    // Invalidate affected caches: project detail, projects list, and overview
+    await cacheService.del(
+      [
+        cacheService.buildKey(accountId, 'project', projectId),
+        cacheService.buildKey(accountId, 'projects'),
+        cacheService.buildKey(accountId, 'overview'),
+      ],
+      accountId,
+    );
+
+    return result;
   },
+
   async deleteProject(projectId: string, accountId: string): Promise<void> {
     const existing = await projectRepository.findById(projectId);
     if (!existing) throw new NotFoundError('Project not found.');
@@ -83,7 +163,11 @@ export const projectService = {
       }
       await client.query('COMMIT');
     } catch (err) {
-      try { await client.query('ROLLBACK'); } catch { /* ignore rollback errors */ }
+      try {
+        await client.query('ROLLBACK');
+      } catch {
+        /* ignore rollback errors */
+      }
       throw err;
     } finally {
       client.release();
@@ -101,6 +185,17 @@ export const projectService = {
         }
       }
     }
+
+    // 4. Invalidate affected caches: project detail, projects list, overview, project batches
+    await cacheService.del(
+      [
+        cacheService.buildKey(accountId, 'project', projectId),
+        cacheService.buildKey(accountId, 'projects'),
+        cacheService.buildKey(accountId, 'overview'),
+        cacheService.buildKey(accountId, 'project', `${projectId}:batches`),
+      ],
+      accountId,
+    );
   },
 };
 

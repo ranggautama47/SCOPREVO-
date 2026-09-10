@@ -9,6 +9,7 @@ import { aiService } from './ai.service';
 import { NotFoundError, ConflictError } from '../middleware/error.middleware';
 import { env } from '../config/env';
 import { RevisionBatchRow, RevisionItemRow, ProjectDocumentRow } from '../types/db.types';
+import { cacheService } from './cache.service';
 
 export interface RevisionItemDTO {
   id: string;
@@ -33,6 +34,9 @@ export interface RevisionBatchListDTO {
   createdAt: Date;
   itemCount: number;
 }
+
+const BATCH_LIST_TTL = 60; // 60 seconds
+const BATCH_DETAIL_TTL = 60; // 60 seconds
 
 function toBatchDetailDTO(batch: RevisionBatchRow, items: RevisionItemRow[]): RevisionBatchDetailDTO {
   return {
@@ -123,7 +127,7 @@ export const revisionService = {
       );
     }
 
-    // 3. Call AI service (validated schema and model fallback/retry)
+    // 4. Call AI service (validated schema and model fallback/retry)
     let context = '';
     if (env.ENABLE_PROJECT_CONTEXT) {
       try {
@@ -143,7 +147,7 @@ export const revisionService = {
       aiResult = await aiService.extractRevisions(rawInput);
     }
 
-    // 4. Persist atomically using a PostgreSQL transaction
+    // 5. Persist atomically using a PostgreSQL transaction
     const client = await db.connect();
     try {
       await client.query('BEGIN');
@@ -167,6 +171,17 @@ export const revisionService = {
       }
 
       await client.query('COMMIT');
+
+      // 6. Invalidate affected caches: project detail, project batches list, overview
+      await cacheService.del(
+        [
+          cacheService.buildKey(accountId, 'project', projectId),
+          cacheService.buildKey(accountId, 'project', `${projectId}:batches`),
+          cacheService.buildKey(accountId, 'overview'),
+        ],
+        accountId,
+      );
+
       return toBatchDetailDTO(batch, items);
     } catch (err) {
       await client.query('ROLLBACK');
@@ -211,6 +226,16 @@ export const revisionService = {
       throw new NotFoundError('Revision batch not found.');
     }
 
+    // Invalidate caches: batch detail, project batches list, overview
+    await cacheService.del(
+      [
+        cacheService.buildKey(accountId, 'batch', batchId),
+        cacheService.buildKey(accountId, 'project', `${batch.project_id}:batches`),
+        cacheService.buildKey(accountId, 'overview'),
+      ],
+      accountId,
+    );
+
     return {
       id: updatedBatch.id,
       status: updatedBatch.status,
@@ -241,6 +266,20 @@ export const revisionService = {
       throw new NotFoundError('Revision batch not found.');
     }
 
+    // Lookup project to find account_id for invalidating tenant cache
+    const project = await projectRepository.findById(batch.project_id);
+    if (project) {
+      await cacheService.del(
+        [
+          cacheService.buildKey(project.account_id, 'batch', batch.id),
+          cacheService.buildKey(project.account_id, 'project', project.id),
+          cacheService.buildKey(project.account_id, 'project', `${project.id}:batches`),
+          cacheService.buildKey(project.account_id, 'overview'),
+        ],
+        project.account_id,
+      );
+    }
+
     return {
       id: updatedBatch.id,
       status: updatedBatch.status,
@@ -248,6 +287,12 @@ export const revisionService = {
   },
 
   async getBatchDetail(batchId: string, accountId: string): Promise<RevisionBatchDetailDTO> {
+    const cacheKey = cacheService.buildKey(accountId, 'batch', batchId);
+    const cached = await cacheService.get<RevisionBatchDetailDTO>(cacheKey, accountId);
+    if (cached) {
+      return cached;
+    }
+
     const batch = await revisionBatchRepository.findById(batchId);
     if (!batch) {
       throw new NotFoundError('Revision batch not found.');
@@ -259,14 +304,23 @@ export const revisionService = {
     }
 
     const items = await revisionItemRepository.findAllByBatchId(batchId);
-    return toBatchDetailDTO(batch, items);
+    const dto = toBatchDetailDTO(batch, items);
+
+    await cacheService.set(cacheKey, dto, BATCH_DETAIL_TTL, accountId);
+    return dto;
   },
 
   async listBatchesByProjectId(projectId: string, accountId: string): Promise<RevisionBatchListDTO[]> {
-    // Verify project ownership
+    // 1. Verify project ownership FIRST
     const project = await projectRepository.findById(projectId);
     if (!project || project.account_id !== accountId) {
       throw new NotFoundError('Project not found.');
+    }
+
+    const cacheKey = cacheService.buildKey(accountId, 'project', `${projectId}:batches`);
+    const cached = await cacheService.get<RevisionBatchListDTO[]>(cacheKey, accountId);
+    if (cached) {
+      return cached;
     }
 
     // Query batches with item count using LEFT JOIN - no N+1
@@ -282,6 +336,8 @@ export const revisionService = {
       [projectId]
     );
 
-    return result.rows.map(toBatchListDTO);
+    const dtoList = result.rows.map(toBatchListDTO);
+    await cacheService.set(cacheKey, dtoList, BATCH_LIST_TTL, accountId);
+    return dtoList;
   },
 };

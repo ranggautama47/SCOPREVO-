@@ -1,10 +1,12 @@
-﻿import { Router } from 'express';
+import { Router } from 'express';
 import { projectController } from '../controllers/project.controller';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validate.middleware';
 import { createProjectSchema, updateProjectSchema } from '../validators/project.schema';
+import { standardApiLimiter } from '../middleware/rate-limit.middleware';
 const router = Router();
 router.use(authMiddleware);
+router.use(standardApiLimiter);
 router.get('/', projectController.listProjects);
 router.post('/', validate(createProjectSchema), projectController.createProject);
 router.get('/:id', projectController.getProject);

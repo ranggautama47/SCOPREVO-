@@ -1,6 +1,18 @@
+require('ts-node/register');
 require('dotenv').config();
 
+const http = require('http');
+const app = require('./dist/app').default;
+const { setTestRedisClient } = require('./dist/config/redis');
+const { MemoryRedisMock } = require('./dist/tests/memory-redis.mock');
+
 const BASE_URL = 'http://localhost:3000/api';
+const PORT = 3000;
+
+const mockRedisInstance = new MemoryRedisMock();
+setTestRedisClient(mockRedisInstance);
+
+let server;
 
 async function request(method, path, body, headers = {}) {
   const options = {
@@ -8,7 +20,7 @@ async function request(method, path, body, headers = {}) {
     headers: { 'Content-Type': 'application/json', ...headers },
   };
   if (body) options.body = JSON.stringify(body);
-  
+
   const response = await fetch(`${BASE_URL}${path}`, options);
   const data = await response.json().catch(() => ({}));
   return { status: response.status, data };
@@ -33,22 +45,27 @@ function printTest(num, name, req, res, verdict) {
 }
 
 async function runTests() {
+  await new Promise((resolve) => {
+    server = app.listen(PORT, () => {
+      console.log(`[TEST-SERVER] Listening on http://localhost:${PORT}`);
+      resolve();
+    });
+  });
+
   let passed = 0;
   let failed = 0;
   let blocked = 0;
-  
+
   // ========== AUTH TESTS ==========
   console.log('\n\n========================================');
   console.log('AUTH TESTS');
   console.log('========================================');
-  
-  // Test 1: Register a new valid account
-  // Use unique email to avoid conflict with manual test
+
   const timestamp = Date.now();
   let res = await request('POST', '/auth/register', {
     name: 'Test User A',
     email: `testusera${timestamp}@example.com`,
-    password: 'password123'
+    password: 'password123',
   });
   let verdict = (res.status === 201 && res.data.token && res.data.account) ? 'PASS' : 'FAIL';
   if (verdict === 'PASS') passed++; else if (verdict === 'FAIL') failed++;
@@ -57,11 +74,11 @@ async function runTests() {
   const accountAId = res.data.account?.id;
   const emailA = `testusera${timestamp}@example.com`;
 
-// Test 2: Register with duplicate email
+  // Test 2: Register with duplicate email
   res = await request('POST', '/auth/register', {
     name: 'Test User A2',
     email: emailA,
-    password: 'password123'
+    password: 'password123',
   });
   verdict = (res.status === 409 && res.data.error?.code === 'EMAIL_ALREADY_EXISTS') ? 'PASS' : 'FAIL';
   if (verdict === 'PASS') passed++; else if (verdict === 'FAIL') failed++;
@@ -71,7 +88,7 @@ async function runTests() {
   res = await request('POST', '/auth/register', {
     name: '',
     email: 'bad-email',
-    password: 'short'
+    password: 'short',
   });
   verdict = ((res.status === 400 || res.status === 422) && res.data.error?.code === 'VALIDATION_ERROR') ? 'PASS' : 'FAIL';
   if (verdict === 'PASS') passed++; else if (verdict === 'FAIL') failed++;
@@ -80,7 +97,7 @@ async function runTests() {
   // Test 4: Login with correct credentials
   res = await request('POST', '/auth/login', {
     email: emailA,
-    password: 'password123'
+    password: 'password123',
   });
   verdict = (res.status === 200 && res.data.token && res.data.account) ? 'PASS' : 'FAIL';
   if (verdict === 'PASS') passed++; else if (verdict === 'FAIL') failed++;
@@ -91,7 +108,7 @@ async function runTests() {
   // Test 5: Login with wrong password
   res = await request('POST', '/auth/login', {
     email: 'testusera2@example.com',
-    password: 'wrongpassword'
+    password: 'wrongpassword',
   });
   verdict = (res.status === 401 && res.data.error?.code === 'UNAUTHORIZED') ? 'PASS' : 'FAIL';
   if (verdict === 'PASS') passed++; else if (verdict === 'FAIL') failed++;
@@ -100,7 +117,7 @@ async function runTests() {
   // Test 6: Login with unknown email
   res = await request('POST', '/auth/login', {
     email: 'unknown@example.com',
-    password: 'password123'
+    password: 'password123',
   });
   verdict = (res.status === 401 && res.data.error?.code === 'UNAUTHORIZED') ? 'PASS' : 'FAIL';
   if (verdict === 'PASS') passed++; else if (verdict === 'FAIL') failed++;
@@ -131,7 +148,6 @@ async function runTests() {
   console.log('PROJECT TESTS');
   console.log('========================================');
 
-  // Use login token for all project tests
   const authToken = loginTokenA;
   const authAccountId = loginAccountAId;
 
@@ -139,7 +155,7 @@ async function runTests() {
   res = await request('POST', '/projects', {
     name: 'Project Alpha',
     clientName: 'Client Corp',
-    totalAllowedRevisions: 3
+    totalAllowedRevisions: 3,
   }, { Authorization: `Bearer ${authToken}` });
   verdict = (res.status === 201 && res.data.project?.id && res.data.project.accountId === authAccountId) ? 'PASS' : 'FAIL';
   if (verdict === 'PASS') passed++; else if (verdict === 'FAIL') failed++;
@@ -149,7 +165,7 @@ async function runTests() {
   // Test 10: Create project without JWT
   res = await request('POST', '/projects', {
     name: 'Project No Auth',
-    clientName: 'Client Corp'
+    clientName: 'Client Corp',
   });
   verdict = (res.status === 401 && res.data.error?.code === 'UNAUTHORIZED') ? 'PASS' : 'FAIL';
   if (verdict === 'PASS') passed++; else if (verdict === 'FAIL') failed++;
@@ -162,17 +178,15 @@ async function runTests() {
   printTest(11, 'List projects', { method: 'GET', path: '/projects', headers: { Authorization: `Bearer ${authToken}` } }, res, verdict);
 
   // Test 12: Account B cannot see Account A's project
-  // First register Account B
   const emailB = `testuserb${timestamp}@example.com`;
   res = await request('POST', '/auth/register', {
     name: 'Test User B',
     email: emailB,
-    password: 'password123'
+    password: 'password123',
   });
   const tokenB = res.data.token;
   const accountBId = res.data.account?.id;
-  
-  // Try to access Account A's project with Account B's token
+
   if (projectAId && tokenB) {
     res = await request('GET', `/projects/${projectAId}`, null, { Authorization: `Bearer ${tokenB}` });
     verdict = (res.status === 404 && res.data.error?.code === 'NOT_FOUND') ? 'PASS' : 'FAIL';
@@ -200,7 +214,7 @@ async function runTests() {
   if (projectAId) {
     res = await request('PATCH', `/projects/${projectAId}`, {
       name: 'Project Alpha Updated',
-      clientName: 'Client Corp Updated'
+      clientName: 'Client Corp Updated',
     }, { Authorization: `Bearer ${authToken}` });
     verdict = (res.status === 200 && res.data.project?.name === 'Project Alpha Updated') ? 'PASS' : 'FAIL';
     if (verdict === 'PASS') passed++; else if (verdict === 'FAIL') failed++;
@@ -224,16 +238,14 @@ async function runTests() {
   }
 
   // Test 16: Attempt to delete another account's project
-  // Create a new project for Account A first (since we deleted the first one)
   if (authToken) {
     res = await request('POST', '/projects', {
       name: 'Project Beta',
       clientName: 'Client Corp',
-      totalAllowedRevisions: 5
+      totalAllowedRevisions: 5,
     }, { Authorization: `Bearer ${authToken}` });
     const projectBId = res.data.project?.id;
-    
-    // Try to delete with Account B's token
+
     if (projectBId && tokenB) {
       res = await request('DELETE', `/projects/${projectBId}`, null, { Authorization: `Bearer ${tokenB}` });
       verdict = (res.status === 404 && res.data.error?.code === 'NOT_FOUND') ? 'PASS' : 'FAIL';
@@ -255,7 +267,6 @@ async function runTests() {
   console.log('DATABASE / QUOTA TESTS');
   console.log('========================================');
 
-  // Test 17: Verify data persists in Supabase (direct query)
   const { Pool } = require('pg');
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -263,29 +274,27 @@ async function runTests() {
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
   });
-  
+
   const accountResult = await pool.query('SELECT * FROM account WHERE email = $1', [emailA]);
   const projectResult = await pool.query('SELECT * FROM project WHERE account_id = $1', [authAccountId]);
-  
+
   const accountExists = accountResult.rows.length === 1;
-  const projectExists = projectResult.rows.length >= 1; // At least Project Beta
-  
+  const projectExists = projectResult.rows.length >= 1;
+
   verdict = (accountExists && projectExists) ? 'PASS' : 'FAIL';
   if (verdict === 'PASS') passed++; else if (verdict === 'FAIL') failed++;
-  printTest(17, 'Data persists in Supabase', { method: 'DIRECT SQL', path: 'SELECT * FROM account/project', body: null }, { 
-    status: 200, 
-    data: { 
+  printTest(17, 'Data persists in Supabase', { method: 'DIRECT SQL', path: 'SELECT * FROM account/project', body: null }, {
+    status: 200,
+    data: {
       account: accountResult.rows[0] ? { id: accountResult.rows[0].id, email: accountResult.rows[0].email } : null,
-      projects: projectResult.rows.map(p => ({ id: p.id, name: p.name, client_name: p.client_name, total_allowed_revisions: p.total_allowed_revisions }))
-    } 
+      projects: projectResult.rows.map(p => ({ id: p.id, name: p.name, client_name: p.client_name, total_allowed_revisions: p.total_allowed_revisions })),
+    },
   }, verdict);
-  
+
   await pool.end();
 
   // Test 18: Verify usedRevisions/remainingRevisions calculation
-  // Use the project created in test 16 (Project Beta)
   if (authToken) {
-    // First get the project list to find Project Beta
     res = await request('GET', '/projects', null, { Authorization: `Bearer ${authToken}` });
     const projectBeta = res.data.projects?.find(p => p.name === 'Project Beta');
     if (projectBeta) {
@@ -314,6 +323,19 @@ async function runTests() {
   console.log(`FAIL: ${failed}`);
   console.log(`BLOCKED: ${blocked}`);
   console.log(`OVERALL: ${failed === 0 && blocked === 0 ? 'PASS' : 'FAIL'}`);
+
+  // Cleanup
+  if (server) {
+    await new Promise((resolve) => server.close(() => resolve()));
+  }
+  process.exit(failed === 0 && blocked === 0 ? 0 : 1);
 }
 
-runTests().catch(console.error);
+runTests().catch((err) => {
+  console.error(err);
+  if (server) {
+    server.close(() => process.exit(1));
+  } else {
+    process.exit(1);
+  }
+});
