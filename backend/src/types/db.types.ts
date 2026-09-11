@@ -9,6 +9,11 @@ export interface AccountRow {
   email_verified: boolean;
   email_verification_token: string | null;
   email_verification_expires_at: Date | null;
+  pending_email: string | null;
+  email_change_token: string | null;
+  email_change_expires_at: Date | null;
+  password_reset_token: string | null;
+  password_reset_expires_at: Date | null;
   created_at: Date;
 }
 export type ProjectStatus = 'ACTIVE' | 'COMPLETED';
