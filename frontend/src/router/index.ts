@@ -67,6 +67,16 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/auth/VerifyEmailView.vue'),
   },
   {
+    path: '/verify-email-change/:token',
+    name: 'verify-email-change',
+    component: () => import('../views/auth/VerifyEmailChangeView.vue'),
+  },
+  {
+    path: '/reset-password/:token',
+    name: 'reset-password',
+    component: () => import('../views/auth/LoginView.vue'),
+  },
+  {
     path: '/portal/:token',
     name: 'portal',
     component: () => import('../views/portal/PortalView.vue'),

@@ -133,6 +133,19 @@ export const apiClient = {
       request<{ account: { id: string; name: string; email: string; createdAt: string; emailVerified: boolean } }>('/auth/me', {
         method: 'GET',
       }),
+    requestEmailChange: (data: { newEmail: string; currentPassword: string }): Promise<{ message: string; deliveredVia: 'smtp' | 'console'; expiresAt: string }> =>
+      request<{ message: string; deliveredVia: 'smtp' | 'console'; expiresAt: string }>('/auth/email-change/request', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }),
+    verifyEmailChange: (token: string): Promise<{ message: string }> =>
+      request<{ message: string }>(`/auth/verify-email-change/${token}`, {
+        method: 'GET',
+      }),
+    forgotPassword: (data: { email: string }): Promise<{ message: string; deliveredVia: 'smtp' | 'console'; expiresAt: string }> =>
+      request<{ message: string; deliveredVia: 'smtp' | 'console'; expiresAt: string }>('/auth/forgot-password', { method: 'POST', body: JSON.stringify(data) }),
+    resetPassword: (data: { token: string; newPassword: string }): Promise<{ message: string }> =>
+      request<{ message: string }>('/auth/reset-password', { method: 'POST', body: JSON.stringify(data) }),
   },
   overview: {
     get: (): Promise<OverviewData> =>

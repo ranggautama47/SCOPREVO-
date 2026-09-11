@@ -1,15 +1,37 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/auth";
+import { apiClient, ApiError } from "../../api/client";
 
 const router = useRouter();
+const route = useRoute();
 const authStore = useAuthStore();
 
 const email = ref("");
 const password = ref("");
 const showPassword = ref(false);
 const localError = ref<string | null>(null);
+const showForgotPassword = ref(false);
+const forgotEmail = ref("");
+const forgotMessage = ref<string | null>(null);
+const forgotError = ref<string | null>(null);
+const isSubmittingForgot = ref(false);
+const newPassword = ref("");
+const confirmPassword = ref("");
+const showNewPassword = ref(false);
+const showConfirmPassword = ref(false);
+const resetMessage = ref<string | null>(null);
+const resetError = ref<string | null>(null);
+const isSubmittingReset = ref(false);
+const mode = computed<"login" | "request" | "reset">(() =>
+  route.name === "reset-password"
+    ? "reset"
+    : showForgotPassword.value
+      ? "request"
+      : "login",
+);
+const resetToken = computed(() => (route.params.token as string) ?? "");
 
 async function handleLogin() {
   localError.value = null;
@@ -37,6 +59,69 @@ function onImgError(e: Event) {
   img.style.display = "none";
   const fallback = img.nextElementSibling as HTMLElement | null;
   if (fallback) fallback.style.display = "flex";
+}
+
+function toggleForgotPassword() {
+  showForgotPassword.value = !showForgotPassword.value;
+  forgotMessage.value = null;
+  forgotError.value = null;
+  if (showForgotPassword.value && email.value) forgotEmail.value = email.value;
+}
+
+async function handleForgotPassword() {
+  forgotError.value = null;
+  forgotMessage.value = null;
+  isSubmittingForgot.value = true;
+  try {
+    const res = await apiClient.auth.forgotPassword({
+      email: forgotEmail.value,
+    });
+    forgotMessage.value =
+      res.deliveredVia === "console"
+        ? "Reset link generated (backend test mode). Check console logs."
+        : `If an account exists for ${forgotEmail.value}, a reset link has been sent.`;
+  } catch (err: unknown) {
+    forgotError.value =
+      err instanceof ApiError ? err.message : "Failed to send reset email.";
+  } finally {
+    isSubmittingForgot.value = false;
+  }
+}
+
+async function handleResetPassword() {
+  resetError.value = null;
+  resetMessage.value = null;
+  if (newPassword.value.length < 8) {
+    resetError.value = "Password must be at least 8 characters.";
+    return;
+  }
+  if (newPassword.value.length > 72) {
+    resetError.value = "Password must be at most 72 characters.";
+    return;
+  }
+  if (newPassword.value !== confirmPassword.value) {
+    resetError.value = "Passwords do not match.";
+    return;
+  }
+  isSubmittingReset.value = true;
+  try {
+    const res = await apiClient.auth.resetPassword({
+      token: resetToken.value,
+      newPassword: newPassword.value,
+    });
+    resetMessage.value = res.message;
+    newPassword.value = "";
+    confirmPassword.value = "";
+  } catch (err: unknown) {
+    resetError.value =
+      err instanceof ApiError ? err.message : "Failed to reset password.";
+  } finally {
+    isSubmittingReset.value = false;
+  }
+}
+
+function backToLogin() {
+  router.push("/login");
 }
 </script>
 
@@ -123,14 +208,32 @@ function onImgError(e: Event) {
       >
         <!-- Header -->
         <div class="mb-6 border-b-2 border-[#1A1A1A] pb-4">
-          <h2 class="font-editorial text-2xl">Sign In</h2>
+          <h2 class="font-editorial text-2xl">
+            {{
+              mode === "login"
+                ? "Sign In"
+                : mode === "request"
+                  ? "Forgot Password"
+                  : "Reset Password"
+            }}
+          </h2>
           <p class="font-body text-sm mt-1 opacity-70">
-            Access your revision workspace.
+            {{
+              mode === "login"
+                ? "Access your revision workspace."
+                : mode === "request"
+                  ? "Enter your email to receive a reset link."
+                  : "Set your new password."
+            }}
           </p>
         </div>
 
         <!-- Form -->
-        <form @submit.prevent="handleLogin" class="flex flex-col gap-4">
+        <form
+          v-if="mode === 'login'"
+          @submit.prevent="handleLogin"
+          class="flex flex-col gap-4"
+        >
           <div>
             <label
               for="email"
@@ -228,8 +331,146 @@ function onImgError(e: Event) {
           </button>
         </form>
 
+        <form
+          v-else-if="mode === 'request'"
+          @submit.prevent="handleForgotPassword"
+          class="flex flex-col gap-4"
+        >
+          <div>
+            <label
+              for="forgotEmail"
+              class="block font-mono text-xs uppercase tracking-wider mb-1"
+              >Email</label
+            ><input
+              id="forgotEmail"
+              v-model="forgotEmail"
+              type="email"
+              required
+              class="w-full bg-canvasBg border-2 border-[#1A1A1A] px-4 py-3 font-body text-base rounded-none outline-none focus:bg-[#FDFFB6]"
+              placeholder="you@example.com"
+            />
+          </div>
+          <div
+            v-if="forgotError"
+            class="border-2 border-[#1A1A1A] bg-[#FEE2E2] text-[#991B1B] px-4 py-3 font-mono text-xs rounded-none"
+          >
+            {{ forgotError }}
+          </div>
+          <div
+            v-if="forgotMessage"
+            class="border-2 border-[#1A1A1A] bg-[#DCFCE7] text-[#166534] px-4 py-3 font-mono text-xs rounded-none"
+          >
+            {{ forgotMessage }}
+          </div>
+          <button
+            type="submit"
+            :disabled="isSubmittingForgot"
+            class="w-full bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-brutal hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] transition-all disabled:opacity-50 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-brutal rounded-none"
+          >
+            {{ isSubmittingForgot ? "Sending…" : "Send Reset Link" }}
+          </button>
+          <button
+            type="button"
+            @click="toggleForgotPassword"
+            class="font-body text-sm text-[#1A1A1A]/70 cursor-pointer transition-all duration-150 origin-left hover:text-[#1A1A1A] hover:scale-110 hover:underline decoration-[#DCCCFF] decoration-2 underline-offset-4"
+          >
+            ← Back to Sign In
+          </button>
+        </form>
+
+        <form
+          v-else
+          @submit.prevent="handleResetPassword"
+          class="flex flex-col gap-4"
+        >
+          <div>
+            <label
+              for="newPassword"
+              class="block font-mono text-xs uppercase tracking-wider mb-1"
+              >New Password</label
+            ><input
+              id="newPassword"
+              v-model="newPassword"
+              :type="showNewPassword ? 'text' : 'password'"
+              required
+              class="w-full bg-canvasBg border-2 border-[#1A1A1A] px-4 py-3 font-body text-base rounded-none outline-none focus:bg-[#FDFFB6]"
+              placeholder="Min 8 characters"
+            /><button
+              type="button"
+              @click="showNewPassword = !showNewPassword"
+              class="font-mono text-xs mt-1 cursor-pointer"
+            >
+              {{ showNewPassword ? "HIDE" : "SHOW" }}
+            </button>
+          </div>
+          <div>
+            <label
+              for="confirmPassword"
+              class="block font-mono text-xs uppercase tracking-wider mb-1"
+              >Confirm Password</label
+            ><input
+              id="confirmPassword"
+              v-model="confirmPassword"
+              :type="showConfirmPassword ? 'text' : 'password'"
+              required
+              class="w-full bg-canvasBg border-2 border-[#1A1A1A] px-4 py-3 font-body text-base rounded-none outline-none focus:bg-[#FDFFB6]"
+              placeholder="Re-enter password"
+            /><button
+              type="button"
+              @click="showConfirmPassword = !showConfirmPassword"
+              class="font-mono text-xs mt-1 cursor-pointer"
+            >
+              {{ showConfirmPassword ? "HIDE" : "SHOW" }}
+            </button>
+          </div>
+          <div
+            v-if="resetError"
+            class="border-2 border-[#1A1A1A] bg-[#FEE2E2] text-[#991B1B] px-4 py-3 font-mono text-xs rounded-none"
+          >
+            {{ resetError }}
+          </div>
+          <div
+            v-if="resetMessage"
+            class="border-2 border-[#1A1A1A] bg-[#DCFCE7] text-[#166534] px-4 py-3 font-mono text-xs rounded-none"
+          >
+            {{ resetMessage }}
+            <button
+              type="button"
+              @click="backToLogin"
+              class="underline font-semibold"
+            >
+              Sign in now →
+            </button>
+          </div>
+          <button
+            type="submit"
+            :disabled="isSubmittingForgot"
+            class="w-full bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-brutal hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] transition-all disabled:opacity-50 disabled:hover:translate-x-0 disabled:hover:translate-y-0 disabled:hover:shadow-brutal rounded-none"
+          >
+            {{ isSubmittingReset ? "Resetting…" : "Set New Password" }}
+          </button>
+          <button
+            type="button"
+            @click="backToLogin"
+            class="font-body text-sm text-[#1A1A1A]/70 cursor-pointer transition-all duration-150 origin-left hover:text-[#1A1A1A] hover:scale-110 hover:underline decoration-[#DCCCFF] decoration-2 underline-offset-4"
+          >
+            ← Back to Sign In
+          </button>
+        </form>
+
         <!-- Footer -->
-        <div class="mt-6 pt-4 border-t-2 border-[#1A1A1A] text-center">
+        <div
+          class="mt-6 pt-4 border-t-2 border-[#1A1A1A] text-center space-y-2"
+        >
+          <p v-if="mode === 'login'" class="font-body text-sm">
+            <button
+              type="button"
+              @click="toggleForgotPassword"
+              class="font-ui text-[#006D77] underline underline-offset-4 decoration-2 font-semibold cursor-pointer inline-block transition-all duration-150 origin-center hover:text-[#004d54] hover:decoration-4 hover:scale-105 active:scale-95"
+            >
+              Forgot your password?
+            </button>
+          </p>
           <p class="font-body text-sm">
             Don't have an account?
             <router-link

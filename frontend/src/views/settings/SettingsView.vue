@@ -41,12 +41,39 @@ const isSubmittingPassword = ref(false);
 const verificationMessage = ref<string | null>(null);
 const isSendingVerification = ref(false);
 
+const emailChangeForm = ref({ newEmail: '', currentPassword: '' });
+const showEmailChangePassword = ref(false);
+const emailChangeError = ref<string | null>(null);
+const emailChangeSuccess = ref<string | null>(null);
+const isSubmittingEmailChange = ref(false);
+
 const defaultQuota = ref<number>(3);
 const quotaSaved = ref(false);
 
 const isEmailVerified = computed(
   () => authStore.account?.emailVerified === true,
 );
+
+async function handleRequestEmailChange() {
+  if (isMutationsDisabled.value) {
+    emailChangeError.value = 'Tidak dapat mengubah email saat offline / sistem terdegradasi.';
+    return;
+  }
+  emailChangeError.value = null;
+  emailChangeSuccess.value = null;
+  isSubmittingEmailChange.value = true;
+  try {
+    const res = await apiClient.auth.requestEmailChange(emailChangeForm.value);
+    emailChangeSuccess.value = res.deliveredVia === 'console'
+      ? 'Link verifikasi dibuat (mode pengujian backend). Periksa log konsol.'
+      : `Email verifikasi telah dikirim ke ${emailChangeForm.value.newEmail}. Silakan periksa inbox Anda.`;
+    emailChangeForm.value = { newEmail: '', currentPassword: '' };
+  } catch (err: unknown) {
+    emailChangeError.value = err instanceof ApiError ? err.message : 'Gagal mengirim email verifikasi.';
+  } finally {
+    isSubmittingEmailChange.value = false;
+  }
+}
 
 function loadDefaultQuota() {
   const stored = localStorage.getItem(DEFAULT_QUOTA_KEY);
@@ -243,6 +270,35 @@ function saveDefaultQuota() {
           </p>
         </div>
       </div>
+    </section>
+
+    <!-- 3.5 CHANGE EMAIL CARD -->
+    <section class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-6 shadow-[4px_4px_0px_0px_#1A1A1A]">
+      <div class="flex items-center gap-2 mb-6 border-b-2 border-[#1A1A1A]/10 pb-3">
+        <Mail class="w-5 h-5 text-[#1A1A1A]" />
+        <h2 class="font-['Inter',sans-serif] text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">Change Email Address</h2>
+      </div>
+      <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]/70 mb-4">Perbarui alamat email akun Anda. Link verifikasi akan dikirim ke email baru. Email saat ini tetap aktif sampai verifikasi selesai.</p>
+      <form @submit.prevent="handleRequestEmailChange" class="space-y-4">
+        <div>
+          <label class="block font-['JetBrains_Mono',monospace] text-[10px] font-bold uppercase tracking-wider text-[#1A1A1A]/60 mb-1">Current Email</label>
+          <div class="bg-[#FAFAF9] border-2 border-[#1A1A1A] px-3 py-2.5 font-['Noto_Serif',serif] text-sm text-[#1A1A1A]">{{ authStore.account?.email || "—" }}</div>
+        </div>
+        <div>
+          <label class="block font-['JetBrains_Mono',monospace] text-[10px] font-bold uppercase tracking-wider text-[#1A1A1A]/60 mb-1">New Email Address</label>
+          <input v-model="emailChangeForm.newEmail" type="email" required class="w-full bg-[#FAFAF9] border-2 border-[#1A1A1A] px-3 py-2 font-['Noto_Serif',serif] text-sm text-[#1A1A1A] rounded-none focus:outline-none focus:bg-[#FDFFB6] placeholder:text-[#1A1A1A]/40" placeholder="Masukkan email baru..." />
+        </div>
+        <div>
+          <label class="block font-['JetBrains_Mono',monospace] text-[10px] font-bold uppercase tracking-wider text-[#1A1A1A]/60 mb-1">Current Password (Required)</label>
+          <div class="relative flex items-center">
+            <input v-model="emailChangeForm.currentPassword" :type="showEmailChangePassword ? 'text' : 'password'" required class="w-full bg-[#FAFAF9] border-2 border-[#1A1A1A] px-3 py-2 pr-10 font-['Noto_Serif',serif] text-sm text-[#1A1A1A] rounded-none focus:outline-none focus:bg-[#FDFFB6] placeholder:text-[#1A1A1A]/40" placeholder="Masukkan kata sandi saat ini..." />
+            <button type="button" @click="showEmailChangePassword = !showEmailChangePassword" class="absolute right-3 text-[#1A1A1A]/60 hover:text-[#1A1A1A] cursor-pointer"><EyeOff v-if="showEmailChangePassword" class="w-4 h-4" /><Eye v-else class="w-4 h-4" /></button>
+          </div>
+        </div>
+        <div v-if="emailChangeError" class="bg-[#FEE2E2] border-2 border-[#1A1A1A] px-3 py-2 font-['Noto_Serif',serif] text-xs text-[#991B1B]">{{ emailChangeError }}</div>
+        <div v-if="emailChangeSuccess" class="bg-[#DCFCE7] border-2 border-[#1A1A1A] px-3 py-2 font-['Noto_Serif',serif] text-xs text-[#166534] flex items-center gap-1.5"><Check class="w-4 h-4" />{{ emailChangeSuccess }}</div>
+        <button type="submit" :disabled="isSubmittingEmailChange" class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-2.5 font-['Inter',sans-serif] text-xs font-bold uppercase tracking-wider shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all disabled:opacity-50 cursor-pointer">{{ isSubmittingEmailChange ? "SENDING..." : "SEND VERIFICATION EMAIL" }}</button>
+      </form>
     </section>
 
     <!-- 4. CHANGE PASSWORD CARD -->
