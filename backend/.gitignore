@@ -27,3 +27,6 @@ Thumbs.db
 
 # kreditial
 backend/env
+
+# Email preview output (dev-only, tidak untuk di-commit)
+email-preview/
