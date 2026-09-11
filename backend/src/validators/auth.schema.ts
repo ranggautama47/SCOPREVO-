@@ -15,3 +15,17 @@ export const changePasswordSchema = z.object({
   newPassword: z.string({ required_error: 'New password is required.' }).min(8),
 });
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export const requestEmailChangeSchema = z.object({
+  newEmail: z.string({ required_error: 'New email is required.' }).email(),
+  currentPassword: z.string({ required_error: 'Current password is required.' }),
+});
+export type RequestEmailChangeInput = z.infer<typeof requestEmailChangeSchema>;
+export const forgotPasswordSchema = z.object({
+  email: z.string({ required_error: 'Email is required.' }).email('Invalid email format.'),
+});
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export const resetPasswordSchema = z.object({
+  token: z.string({ required_error: 'Token is required.' }).uuid('Invalid token format.'),
+  newPassword: z.string({ required_error: 'New password is required.' }).min(8, 'Password must be at least 8 characters.').max(72, 'Password must be at most 72 characters.'),
+});
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
