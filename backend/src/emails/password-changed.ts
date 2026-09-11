@@ -1,3 +1,6 @@
+import { env } from '../config/env';
+
+
 export function buildPasswordChangedEmail(params: {
   name: string;
   time: string | Date;
@@ -42,7 +45,7 @@ export function buildPasswordChangedEmail(params: {
 
   const formattedTime = formatTimestamp(params.time);
   const safeName = params.name || "there";
-  const baseUrl = params.baseUrl || process.env.APP_BASE_URL || "http://localhost:5173";
+  const baseUrl = params.baseUrl || env.APP_BASE_URL;
 
   const logoBlock = params.logoUrl
     ? `<img src="${params.logoUrl}" alt="SCOPREVO" width="28" height="28" style="display:inline-block; vertical-align:middle; width:28px; height:28px; margin-right:10px; border:2px solid ${black}; background-color:${canvas};" />`

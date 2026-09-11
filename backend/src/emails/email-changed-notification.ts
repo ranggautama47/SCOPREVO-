@@ -1,3 +1,6 @@
+import { env } from '../config/env';
+
+
 export function buildEmailChangedNotification(params: {
   name: string;
   oldEmail: string;
@@ -14,7 +17,7 @@ export function buildEmailChangedNotification(params: {
   const red = "#E63946";
   const lavender = "#DCCCFF";
   
-  const baseUrl = params.baseUrl || "http://localhost:5173";
+  const baseUrl = params.baseUrl || env.APP_BASE_URL;;
 
   const fontSerif = "'Baskervville', Georgia, serif";
   const fontSans = "'Inter', Arial, sans-serif";
