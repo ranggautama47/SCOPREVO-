@@ -4,7 +4,7 @@ import {
   RateLimiterMemory,
   RateLimiterRes,
 } from "rate-limiter-flexible";
-import { getRedisClient, isRedisReady } from "../config/redis";
+import { getRedisClient } from "../config/redis";
 import {
   TooManyRequestsError,
   ServiceUnavailableError,
@@ -23,6 +23,7 @@ export interface RateLimitOptions {
 export function createRateLimiter(options: RateLimitOptions) {
   let redisLimiter: RateLimiterRedis | null = null;
   let fallbackMemoryLimiter: RateLimiterMemory | null = null;
+  let hasLoggedFallbackWarning = false;
 
   function getLimiter(): RateLimiterRedis | RateLimiterMemory {
     const client = getRedisClient();
@@ -38,6 +39,18 @@ export function createRateLimiter(options: RateLimitOptions) {
       }
       return redisLimiter;
     }
+
+    if (!hasLoggedFallbackWarning) {
+      logStructured("warn", {
+        event: "RATE_LIMIT_FALLBACK_TO_MEMORY",
+        details: {
+          keyPrefix: options.keyPrefix,
+          reason: client ? `Redis status is ${client.status}` : "Redis client not available",
+        },
+      });
+      hasLoggedFallbackWarning = true;
+    }
+
     if (!fallbackMemoryLimiter) {
       fallbackMemoryLimiter = new RateLimiterMemory({
         points: options.points,
@@ -75,38 +88,6 @@ export function createRateLimiter(options: RateLimitOptions) {
         return next();
       }
       key = "anonymous";
-    }
-
-    const ready = await isRedisReady();
-    if (!ready) {
-      if (process.env.NODE_ENV !== "production") {
-        console.warn("[DEV] Redis not found, skipping rate limit check");
-        return next();
-      }
-
-      if (options.failurePolicy === "fail-closed") {
-        logStructured("error", {
-          event: "RATE_LIMIT_REDIS_ERROR",
-          route: req.originalUrl,
-          accountId: req.accountId,
-          error:
-            "Redis unavailable for protected rate limit route (fail-closed)",
-        });
-        return next(
-          new ServiceUnavailableError(
-            "Service temporarily unavailable. Please retry later.",
-            "SERVICE_UNAVAILABLE",
-          ),
-        );
-      } else {
-        logStructured("warn", {
-          event: "RATE_LIMIT_REDIS_ERROR",
-          route: req.originalUrl,
-          accountId: req.accountId,
-          error: "Redis unavailable for rate limit (fail-open)",
-        });
-        return next();
-      }
     }
 
     const limiter = getLimiter();
@@ -225,6 +206,7 @@ export const authVerificationEmailLimiter = createRateLimiter({
   type: "account",
   failurePolicy: "fail-closed",
 });
+
 export const authEmailChangeLimiter = createRateLimiter({
   points: 1,
   duration: 60,
@@ -232,6 +214,7 @@ export const authEmailChangeLimiter = createRateLimiter({
   type: "account",
   failurePolicy: "fail-closed",
 });
+
 export const authForgotPasswordLimiter = createRateLimiter({
   points: 3,
   duration: 60,
@@ -239,6 +222,7 @@ export const authForgotPasswordLimiter = createRateLimiter({
   type: "ip",
   failurePolicy: "fail-closed",
 });
+
 export const authResetPasswordLimiter = createRateLimiter({
   points: 5,
   duration: 60,
