@@ -228,12 +228,24 @@ export const authVerificationEmailLimiter = createRateLimiter({
 export const authEmailChangeLimiter = createRateLimiter({
   points: 1,
   duration: 60,
-  keyPrefix: 'auth:email_change',
-  type: 'account',
-  failurePolicy: 'fail-closed',
+  keyPrefix: "auth:email_change",
+  type: "account",
+  failurePolicy: "fail-closed",
 });
-export const authForgotPasswordLimiter = createRateLimiter({ points: 3, duration: 60, keyPrefix: 'auth:forgot_password', type: 'ip', failurePolicy: 'fail-closed' });
-export const authResetPasswordLimiter = createRateLimiter({ points: 5, duration: 60, keyPrefix: 'auth:reset_password', type: 'ip', failurePolicy: 'fail-closed' });
+export const authForgotPasswordLimiter = createRateLimiter({
+  points: 3,
+  duration: 60,
+  keyPrefix: "auth:forgot_password",
+  type: "ip",
+  failurePolicy: "fail-closed",
+});
+export const authResetPasswordLimiter = createRateLimiter({
+  points: 5,
+  duration: 60,
+  keyPrefix: "auth:reset_password",
+  type: "ip",
+  failurePolicy: "fail-closed",
+});
 
 // 4. Standard Authenticated API: 120 req/min/account (Fail-open)
 export const standardApiLimiter = createRateLimiter({
