@@ -133,9 +133,34 @@ export function setupNetworkListeners(): void {
       setOnline();
     }
   });
+
   window.addEventListener("offline", () => {
     setOffline();
   });
+
+  // TAMBAHAN: Deteksi otomatis kualitas jaringan browser
+  const conn = (
+    navigator as unknown as {
+      connection?: { effectiveType?: string; addEventListener?: Function };
+    }
+  ).connection;
+  if (conn) {
+    const updateConnectionStatus = () => {
+      if (
+        conn.effectiveType === "slow-2g" ||
+        conn.effectiveType === "2g" ||
+        conn.effectiveType === "3g"
+      ) {
+        setSlowNetwork();
+      }
+    };
+
+    // Cek status saat pertama kali load
+    updateConnectionStatus();
+
+    // Dengarkan perubahan jaringan secara real-time
+    conn.addEventListener?.("change", updateConnectionStatus);
+  }
 }
 
 export function handleApiError(error: unknown): void {
@@ -165,6 +190,7 @@ export function handleApiError(error: unknown): void {
             : undefined
         : undefined;
 
+  // 1. Jika dapat response HTTP status 5xx dari backend -> Server Error
   if ([500, 502, 503, 504].includes(responseStatus ?? 0)) {
     setServerError();
     return;
@@ -172,18 +198,23 @@ export function handleApiError(error: unknown): void {
 
   const errorName =
     typeof errorWithResponse?.name === "string" ? errorWithResponse.name : "";
-  if (errorName === "TimeoutError" || errorName === "AbortError") {
-    setSlowNetwork();
-    return;
-  }
-
   const errorMessage =
     typeof errorWithResponse?.message === "string"
       ? errorWithResponse.message
       : "";
+
+  // 2. Jika Timeout, Abort, atau "Failed to fetch" karena jaringan lambat -> Slow Network
   if (
-    /failed to fetch|ERR_CONNECTION_REFUSED|ECONNREFUSED/i.test(errorMessage)
+    errorName === "TimeoutError" ||
+    errorName === "AbortError" ||
+    /failed to fetch/i.test(errorMessage)
   ) {
+    setSlowNetwork();
+    return;
+  }
+
+  // 3. Jika backend lokal mati total (Connection Refused) -> Server Error
+  if (/ERR_CONNECTION_REFUSED|ECONNREFUSED/i.test(errorMessage)) {
     setServerError();
     return;
   }
