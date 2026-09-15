@@ -6,6 +6,7 @@ import type { PortalBatchResponse, ScopeStatus } from "../../types/api";
 
 const route = useRoute();
 const token = computed(() => route.params.token as string);
+const currentYear = computed(() => new Date().getFullYear());
 
 const batchData = ref<PortalBatchResponse | null>(null);
 const isLoading = ref(true);
@@ -381,7 +382,7 @@ watch(
         <!-- Footer -->
         <div class="mt-12 text-center">
           <p class="font-mono text-xs text-[#1A1A1A]/50">
-            © 2026 SCOPREVO • ALL RIGHTS RESERVED
+            © {{ currentYear }} SCOPREVO • ALL RIGHTS RESERVED
           </p>
           <p class="font-mono text-xs text-[#1A1A1A]/50 mt-1">
             SCOPREVO CLIENT PORTAL
