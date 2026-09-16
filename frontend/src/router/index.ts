@@ -3,6 +3,13 @@ import { useAuthStore } from '../stores/auth';
 
 const routes: RouteRecordRaw[] = [
   {
+    // Public landing page — no auth required
+    path: '/',
+    name: 'landing',
+    component: () => import('../views/LandingView.vue'),
+    meta: { public: true, requiresAuth: false },
+  },
+  {
     path: '/login',
     name: 'login',
     component: () => import('../views/auth/LoginView.vue'),
