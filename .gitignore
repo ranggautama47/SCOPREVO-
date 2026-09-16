@@ -4,6 +4,9 @@ docs/ai context/APPLICATION_ARCHITECTURE.md
 .ai-context.md
 graphify-out/
 
+# Storybook (Jangan di-commit)
+.storybook/
+
 # Test Artifacts & Fixtures
 *.pdf
 *.txt
