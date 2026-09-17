@@ -7,6 +7,12 @@ graphify-out/
 # Storybook (Jangan di-commit)
 .storybook/
 
+# AI agent workspaces (local-only; bisa berisi credential provider — JANGAN masuk repo)
+.kilo/
+# opsional, aktifkan hanya kalau tool-nya benar-benar membuat folder ini di lokal:
+# .antigravity/
+# .opencode/
+
 # Test Artifacts & Fixtures
 *.pdf
 *.txt
