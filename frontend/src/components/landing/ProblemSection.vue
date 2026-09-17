@@ -10,18 +10,18 @@
           style="border-radius: 9999px !important;"
           class="w-fit inline-flex items-center justify-center bg-[#FDFFB6] border-2 border-[#1A1A1A] px-4 py-3 font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-wider text-[#1A1A1A] leading-none shrink-0"
         >
-          THE PROBLEM
+          {{ t('landing.problem.eyebrow') }}
         </span>
 
         <h2 class="font-['Baskervville',serif] text-4xl md:text-5xl leading-[1.15] text-[#1A1A1A]">
-          The hardest part of revisions is knowing where the original scope ends.
+          {{ t('landing.problem.headline') }}
         </h2>
       </div>
 
       <!-- KOLOM KANAN: Subheadline & Cards Row -->
       <div class="lg:col-span-7 flex flex-col gap-6 lg:mt-2">
         <p class="font-['Noto_Serif',serif] text-base md:text-lg text-[#1A1A1A] font-medium">
-          Scope creep rarely starts with a big request.
+          {{ t('landing.problem.subheadline') }}
         </p>
 
         <!-- Cards Grid (3 Kolom Sejajar) -->
@@ -38,12 +38,12 @@
                 01
               </span>
               <h3 class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-tight text-[#1A1A1A]">
-                MESSY FEEDBACK
+                {{ t('landing.problem.card1.title') }}
               </h3>
             </div>
             <div class="p-4 flex-grow">
               <p class="font-['Noto_Serif',serif] text-sm leading-[1.6] text-[#1A1A1A]/80">
-                Small tweaks and major new features arrive mixed together in everyday client chats.
+                {{ t('landing.problem.card1.description') }}
               </p>
             </div>
           </div>
@@ -59,12 +59,12 @@
                 02
               </span>
               <h3 class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-tight text-[#1A1A1A]">
-                UNCLEAR BOUNDARIES
+                {{ t('landing.problem.card2.title') }}
               </h3>
             </div>
             <div class="p-4 flex-grow">
               <p class="font-['Noto_Serif',serif] text-sm leading-[1.6] text-[#1A1A1A]/80">
-                Without explicit classification, harmless-looking requests quietly turn into unpaid extra work.
+                {{ t('landing.problem.card2.description') }}
               </p>
             </div>
           </div>
@@ -80,12 +80,12 @@
                 03
               </span>
               <h3 class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-tight text-[#1A1A1A]">
-                PM TOOLS ARE TOO HEAVY
+                {{ t('landing.problem.card3.title') }}
               </h3>
             </div>
             <div class="p-4 flex-grow">
               <p class="font-['Noto_Serif',serif] text-sm leading-[1.6] text-[#1A1A1A]/80">
-                Generic PM tools force complex team onboarding. SCOPREVO focuses deeply on one painful moment: the scope decision.
+                {{ t('landing.problem.card3.description') }}
               </p>
             </div>
           </div>
@@ -96,3 +96,9 @@
     </div>
   </section>
 </template>
+
+<script setup lang="ts">
+import { useI18n } from '@/composables/useI18n'
+
+const { t } = useI18n()
+</script>

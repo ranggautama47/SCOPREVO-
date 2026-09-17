@@ -13,13 +13,13 @@
               style="border-radius: 9999px !important;"
               class="w-fit inline-flex items-center justify-center bg-[#FDFFB6] border-2 border-[#1A1A1A] px-3.5 py-1 font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-wider text-[#1A1A1A] leading-none shrink-0 mb-6"
             >
-              REVISION QUOTA TRACKING
+              {{ t('landing.proof.quotaEyebrow') }}
             </span>
             <h2 class="font-['Baskervville',serif] text-3xl md:text-4xl leading-[1.15] text-[#1A1A1A] mb-4">
-              Keep revision limits visible and fair.
+              {{ t('landing.proof.quotaHeadline') }}
             </h2>
             <p class="font-['Noto_Serif',serif] text-sm md:text-base leading-[1.65] text-[#1A1A1A]/80 mb-8">
-              Submitting a feedback batch doesn't consume quota immediately. Revision usage is counted only when the client approves the scope.
+              {{ t('landing.proof.quotaDescription') }}
             </p>
           </div>
           <QuotaProgressMockup />
@@ -36,13 +36,13 @@
               style="border-radius: 9999px !important;"
               class="w-fit inline-flex items-center justify-center bg-[#FDFFB6] border-2 border-[#1A1A1A] px-3.5 py-1 font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-wider text-[#1A1A1A] leading-none shrink-0 mb-6"
             >
-              WHY SCOPREVO
+              {{ t('landing.proof.whyEyebrow') }}
             </span>
             <h2 class="font-['Baskervville',serif] text-3xl md:text-4xl leading-[1.15] text-[#1A1A1A] mb-4">
-              Not another tool for managing everything.
+              {{ t('landing.proof.whyHeadline') }}
             </h2>
             <p class="font-['Noto_Serif',serif] text-sm md:text-base leading-[1.65] text-[#1A1A1A]/80 mb-6">
-              Generic PM tools are built for teams. SCOPREVO is built for the moment freelancers dread most: deciding what's actually in scope.
+              {{ t('landing.proof.whyDescription') }}
             </p>
           </div>
           <WhyScoprevoComparisonMockup />
@@ -56,4 +56,7 @@
 <script setup lang="ts">
 import QuotaProgressMockup from '@/components/landing/mockups/QuotaProgressMockup.vue'
 import WhyScoprevoComparisonMockup from '@/components/landing/mockups/WhyScoprevoComparisonMockup.vue'
+import { useI18n } from '@/composables/useI18n'
+
+const { t } = useI18n()
 </script>

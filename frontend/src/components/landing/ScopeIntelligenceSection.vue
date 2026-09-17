@@ -13,13 +13,13 @@
           style="border-radius: 9999px !important"
           class="w-fit inline-flex items-center justify-center bg-[#FAFAF9] border-2 border-[#1A1A1A] px-4 py-3 font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-wider text-[#1A1A1A] leading-none shrink-0"
         >
-          THREE-WAY SCOPE INTELLIGENCE
+          {{ t('landing.scope.eyebrow') }}
         </span>
 
         <h2
           class="font-['Baskervville',serif] text-4xl md:text-5xl leading-[1.15] text-[#1A1A1A]"
         >
-          Not every request needs a binary yes or no.
+          {{ t('landing.scope.headline') }}
         </h2>
       </div>
 
@@ -41,14 +41,14 @@
               <span
                 class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-wide text-[#166534]"
               >
-                IN_SCOPE
+                {{ t('landing.scope.inScope.title') }}
               </span>
             </div>
             <!-- Body Content -->
             <p
               class="font-['Noto_Serif',serif] text-sm leading-[1.6] text-[#166534] font-medium"
             >
-              Matches the agreed project specification — safe to execute.
+              {{ t('landing.scope.inScope.description') }}
             </p>
           </div>
         </div>
@@ -69,15 +69,14 @@
               <span
                 class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-wide text-[#1A1A1A]"
               >
-                NEEDS_REVIEW
+                {{ t('landing.scope.needsReview.title') }}
               </span>
             </div>
             <!-- Body Content -->
             <p
               class="font-['Noto_Serif',serif] text-sm leading-[1.6] text-[#1A1A1A]/90 font-medium"
             >
-              AI detects ambiguity and defers to human judgment. Protects
-              freelancer–client trust by avoiding AI overconfidence.
+              {{ t('landing.scope.needsReview.description') }}
             </p>
           </div>
         </div>
@@ -98,15 +97,14 @@
               <span
                 class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-wide text-[#991B1B]"
               >
-                OUT_OF_SCOPE
+                {{ t('landing.scope.outOfScope.title') }}
               </span>
             </div>
             <!-- Body Content -->
             <p
               class="font-['Noto_Serif',serif] text-sm leading-[1.6] text-[#991B1B] font-medium"
             >
-              Goes beyond the original agreement — requires additional scope
-              approval.
+              {{ t('landing.scope.outOfScope.description') }}
             </p>
           </div>
         </div>
@@ -117,4 +115,7 @@
 
 <script setup lang="ts">
 import { CheckCircle, HelpCircle, XCircle } from "lucide-vue-next";
+import { useI18n } from '@/composables/useI18n'
+
+const { t } = useI18n()
 </script>

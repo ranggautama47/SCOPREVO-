@@ -9,10 +9,10 @@
         <p
           class="font-['Inter',sans-serif] text-[9px] uppercase tracking-wider text-[#1A1A1A]/50 mb-2"
         >
-          Freelancer
+          {{ t('landing.mockup.freelancer') }}
         </p>
         <h4 class="font-['Baskervville',serif] text-sm text-[#1A1A1A] mb-3">
-          REVISION QUOTA
+          {{ t('landing.mockup.revisionQuota') }}
         </h4>
 
         <!-- Progress bar -->
@@ -26,13 +26,13 @@
         <p
           class="font-['JetBrains_Mono',monospace] text-xs font-bold text-[#1A1A1A] mb-3"
         >
-          2 / 3 USED
+          {{ t('landing.mockup.quotaUsed') }}
         </p>
 
         <!-- Batch Status Row with Highlight Yellow Badge -->
         <div class="flex items-center gap-1.5 mb-4">
           <span class="font-['Inter',sans-serif] text-[10px] text-[#1A1A1A]/70"
-            >Batch Status:</span
+            >{{ t('landing.mockup.batchStatus') }}</span
           >
 
           <!-- Highlighting khusus PENDING_CONFIRMATION (Kuning Pill Neo-Brutalist) -->
@@ -40,15 +40,15 @@
             style="border-radius: 9999px !important"
             class="inline-flex items-center bg-[#FDFFB6] border border-[#1A1A1A] px-2 py-0.5 font-['JetBrains_Mono',monospace] text-[9px] font-bold text-[#1A1A1A] leading-none shrink-0"
           >
-            PENDING_CONFIRMATION
+            {{ t('landing.mockup.pendingConfirmation') }}
           </span>
         </div>
 
         <button
           class="w-full font-['Inter',sans-serif] text-[9px] font-medium uppercase tracking-wider px-2 py-2 border-2 border-[#1A1A1A] bg-[#006D77] text-[#FAFAF9] shadow-[2px_2px_0px_0px_#1A1A1A] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all focus:ring-2 focus:ring-[#006D77] focus:outline-none"
-          aria-label="Share magic link with client"
+          :aria-label="t('landing.mockup.shareMagicLinkAria')"
         >
-          SHARE MAGIC LINK
+          {{ t('landing.mockup.shareMagicLink') }}
         </button>
       </div>
 
@@ -57,10 +57,10 @@
         <p
           class="font-['Inter',sans-serif] text-[9px] uppercase tracking-wider text-[#1A1A1A]/50 mb-2"
         >
-          Client Portal (Public View)
+          {{ t('landing.mockup.clientPortal') }}
         </p>
         <h4 class="font-['Baskervville',serif] text-sm text-[#1A1A1A] mb-3">
-          REVISION SCOPE
+          {{ t('landing.mockup.revisionScope') }}
         </h4>
 
         <!-- Mini checklist -->
@@ -68,7 +68,7 @@
           <div class="flex items-center gap-1.5">
             <span
               class="bg-[#DCFCE7] text-[#166534] rounded-full px-1.5 py-0.5 font-['JetBrains_Mono',monospace] text-[8px]"
-              >IN_SCOPE</span
+              >{{ t('landing.mockup.inScope') }}</span
             >
             <span class="font-['Inter',sans-serif] text-[9px] text-[#1A1A1A]"
               >(3)</span
@@ -77,7 +77,7 @@
           <div class="flex items-center gap-1.5">
             <span
               class="bg-[#FDFFB6] text-[#1A1A1A] rounded-full px-1.5 py-0.5 font-['JetBrains_Mono',monospace] text-[8px]"
-              >NEEDS_REVIEW</span
+              >{{ t('landing.mockup.needsReview') }}</span
             >
             <span class="font-['Inter',sans-serif] text-[9px] text-[#1A1A1A]"
               >(2)</span
@@ -86,7 +86,7 @@
           <div class="flex items-center gap-1.5">
             <span
               class="bg-[#FEE2E2] text-[#991B1B] rounded-full px-1.5 py-0.5 font-['JetBrains_Mono',monospace] text-[8px]"
-              >OUT_OF_SCOPE</span
+              >{{ t('landing.mockup.outOfScope') }}</span
             >
             <span class="font-['Inter',sans-serif] text-[9px] text-[#1A1A1A]"
               >(1)</span
@@ -96,18 +96,21 @@
 
         <button
           class="w-full font-['Inter',sans-serif] text-[9px] font-medium uppercase tracking-wider px-2 py-2 border-2 border-[#1A1A1A] bg-[#FAFAF9] text-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#1A1A1A] hover:text-[#FAFAF9] transition-colors focus:ring-2 focus:ring-[#006D77] focus:outline-none"
-          aria-label="Confirm revision scope"
         >
-          CONFIRM REVISION SCOPE
+          {{ t('landing.mockup.confirmRevisionScope') }}
         </button>
         <p
           class="font-['Inter',sans-serif] text-[8px] text-[#1A1A1A]/40 mt-2 text-center"
         >
-          No login required
+          {{ t('landing.mockup.noLoginRequired') }}
         </p>
       </div>
     </div>
   </div>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { useI18n } from '@/composables/useI18n'
+
+const { t } = useI18n()
+</script>

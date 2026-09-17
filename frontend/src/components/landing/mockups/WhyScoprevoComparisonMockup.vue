@@ -7,38 +7,38 @@
       <!-- Gray Header Strip -->
       <div class="bg-[#E5E7EB] border-b-2 border-[#1A1A1A] p-2.5">
         <p class="font-['JetBrains_Mono',monospace] text-xs font-bold text-[#1A1A1A] uppercase tracking-tight">
-          Generic PM Suites
+          {{ t('landing.mockup.genericPmSuites') }}
         </p>
       </div>
       <!-- Items List -->
       <div class="p-3.5 space-y-2.5 font-['Inter',sans-serif] text-xs text-[#1A1A1A]/70">
         <div class="flex items-center gap-2">
           <Layers :size="14" class="shrink-0" />
-          <span>Tasks</span>
+          <span>{{ t('landing.mockup.pmTasks') }}</span>
         </div>
         <div class="flex items-center gap-2">
           <Users :size="14" class="shrink-0" />
-          <span>Teams</span>
+          <span>{{ t('landing.mockup.pmTeams') }}</span>
         </div>
         <div class="flex items-center gap-2">
           <Calendar :size="14" class="shrink-0" />
-          <span>Calendars</span>
+          <span>{{ t('landing.mockup.pmCalendars') }}</span>
         </div>
         <div class="flex items-center gap-2">
           <CreditCard :size="14" class="shrink-0" />
-          <span>CRM</span>
+          <span>{{ t('landing.mockup.pmCrm') }}</span>
         </div>
         <div class="flex items-center gap-2">
           <FileText :size="14" class="shrink-0" />
-          <span>Invoicing</span>
+          <span>{{ t('landing.mockup.pmInvoicing') }}</span>
         </div>
         <div class="flex items-center gap-2">
           <Kanban :size="14" class="shrink-0" />
-          <span>Kanban Boards</span>
+          <span>{{ t('landing.mockup.pmKanban') }}</span>
         </div>
         <div class="flex items-center gap-2">
           <BarChart3 :size="14" class="shrink-0" />
-          <span>Reports...</span>
+          <span>{{ t('landing.mockup.pmReports') }}</span>
         </div>
       </div>
     </div>
@@ -48,7 +48,7 @@
       <!-- Teal Header Strip -->
       <div class="bg-[#006D77] border-b-2 border-[#1A1A1A] p-2.5">
         <p class="font-['JetBrains_Mono',monospace] text-xs font-bold text-[#FAFAF9] uppercase tracking-tight">
-          SCOPREVO Core Loop
+          {{ t('landing.mockup.scoprevoCoreLoop') }}
         </p>
       </div>
 
@@ -63,7 +63,7 @@
           >
             01
           </span>
-          <span class="font-['Inter',sans-serif] text-[11px] text-[#1A1A1A] font-medium">Raw Feedback</span>
+          <span class="font-['Inter',sans-serif] text-[11px] text-[#1A1A1A] font-medium">{{ t('landing.mockup.coreStep1') }}</span>
         </div>
 
         <div class="flex justify-center py-0.5">
@@ -78,7 +78,7 @@
           >
             02
           </span>
-          <span class="font-['Inter',sans-serif] text-[11px] text-[#1A1A1A] font-medium">AI Scope Analysis</span>
+          <span class="font-['Inter',sans-serif] text-[11px] text-[#1A1A1A] font-medium">{{ t('landing.mockup.coreStep2') }}</span>
         </div>
 
         <div class="flex justify-center py-0.5">
@@ -93,7 +93,7 @@
           >
             03
           </span>
-          <span class="font-['Inter',sans-serif] text-[11px] text-[#166534] font-medium">Revision Checklist</span>
+          <span class="font-['Inter',sans-serif] text-[11px] text-[#166534] font-medium">{{ t('landing.mockup.coreStep3') }}</span>
         </div>
 
         <div class="flex justify-center py-0.5">
@@ -108,7 +108,7 @@
           >
             04
           </span>
-          <span class="font-['Inter',sans-serif] text-[11px] text-[#1A1A1A] font-medium">Quota Tracking</span>
+          <span class="font-['Inter',sans-serif] text-[11px] text-[#1A1A1A] font-medium">{{ t('landing.mockup.coreStep4') }}</span>
         </div>
 
         <div class="flex justify-center py-0.5">
@@ -123,7 +123,7 @@
           >
             05
           </span>
-          <span class="font-['Inter',sans-serif] text-[11px] text-[#FAFAF9] font-medium">Client Confirmation</span>
+          <span class="font-['Inter',sans-serif] text-[11px] text-[#FAFAF9] font-medium">{{ t('landing.mockup.coreStep5') }}</span>
         </div>
 
       </div>
@@ -143,4 +143,7 @@ import {
   BarChart3, 
   ArrowDown 
 } from 'lucide-vue-next'
+import { useI18n } from '@/composables/useI18n'
+
+const { t } = useI18n()
 </script>

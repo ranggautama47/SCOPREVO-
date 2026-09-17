@@ -8,10 +8,10 @@
           style="border-radius: 9999px !important;"
           class="w-fit inline-flex items-center justify-center bg-[#FDFFB6] border-2 border-[#1A1A1A] px-3 py-3 font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-wider text-[#1A1A1A] leading-none shrink-0"
         >
-          HOW IT WORKS
+          {{ t('landing.how.eyebrow') }}
         </span>
         <h2 class="font-['Baskervville',serif] text-3xl md:text-4xl lg:text-5xl leading-[1.15] text-[#1A1A1A] max-w-2xl">
-          From scattered feedback to a clear scope decision in four steps.
+          {{ t('landing.how.headline') }}
         </h2>
       </div>
 
@@ -28,11 +28,9 @@
             >
               01
             </span>
-            <h3 class="font-['Baskervville',serif] text-xl font-bold text-[#1A1A1A]">Paste the feedback you received</h3>
+            <h3 class="font-['Baskervville',serif] text-xl font-bold text-[#1A1A1A]">{{ t('landing.how.step1.title') }}</h3>
           </div>
-          <p class="font-['Noto_Serif',serif] text-sm leading-[1.7] text-[#1A1A1A]/70">
-            Copy feedback from WhatsApp, email, or chat and paste it into SCOPREVO.
-          </p>
+          <p class="font-['Noto_Serif',serif] text-sm leading-[1.7] text-[#1A1A1A]/70">{{ t('landing.how.step1.description') }}</p>
           <FeedbackInputMockup />
         </div>
 
@@ -46,11 +44,9 @@
             >
               02
             </span>
-            <h3 class="font-['Baskervville',serif] text-xl font-bold text-[#1A1A1A]">AI classifies each request</h3>
+            <h3 class="font-['Baskervville',serif] text-xl font-bold text-[#1A1A1A]">{{ t('landing.how.step2.title') }}</h3>
           </div>
-          <p class="font-['Noto_Serif',serif] text-sm leading-[1.7] text-[#1A1A1A]/70">
-            SCOPREVO extracts individual items and flags ambiguity with NEEDS_REVIEW instead of forcing false confidence.
-          </p>
+          <p class="font-['Noto_Serif',serif] text-sm leading-[1.7] text-[#1A1A1A]/70">{{ t('landing.how.step2.description') }}</p>
           <AiAnalysisMockup />
         </div>
 
@@ -64,11 +60,9 @@
             >
               03
             </span>
-            <h3 class="font-['Baskervville',serif] text-xl font-bold text-[#1A1A1A]">Get a structured revision checklist</h3>
+            <h3 class="font-['Baskervville',serif] text-xl font-bold text-[#1A1A1A]">{{ t('landing.how.step3.title') }}</h3>
           </div>
-          <p class="font-['Noto_Serif',serif] text-sm leading-[1.7] text-[#1A1A1A]/70">
-            Every request becomes an actionable checklist item complete with scope status and reasoning.
-          </p>
+          <p class="font-['Noto_Serif',serif] text-sm leading-[1.7] text-[#1A1A1A]/70">{{ t('landing.how.step3.description') }}</p>
           <RevisionChecklistMockup />
         </div>
 
@@ -82,11 +76,9 @@
             >
               04
             </span>
-            <h3 class="font-['Baskervville',serif] text-xl font-bold text-[#1A1A1A]">Track quota &amp; let client confirm</h3>
+            <h3 class="font-['Baskervville',serif] text-xl font-bold text-[#1A1A1A]">{{ t('landing.how.step4.title') }}</h3>
           </div>
-          <p class="font-['Noto_Serif',serif] text-sm leading-[1.7] text-[#1A1A1A]/70">
-            Revision usage only updates when the batch is approved. Share a magic link for zero-login client confirmation.
-          </p>
+          <p class="font-['Noto_Serif',serif] text-sm leading-[1.7] text-[#1A1A1A]/70">{{ t('landing.how.step4.description') }}</p>
           <ClientConfirmationMockup />
         </div>
       </div>
@@ -99,4 +91,7 @@ import FeedbackInputMockup from '@/components/landing/mockups/FeedbackInputMocku
 import AiAnalysisMockup from '@/components/landing/mockups/AiAnalysisMockup.vue'
 import RevisionChecklistMockup from '@/components/landing/mockups/RevisionChecklistMockup.vue'
 import ClientConfirmationMockup from '@/components/landing/mockups/ClientConfirmationMockup.vue'
+import { useI18n } from '@/composables/useI18n'
+
+const { t } = useI18n()
 </script>
