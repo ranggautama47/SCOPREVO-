@@ -2,18 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+html[data-font-size="sm"] {
+  font-size: 14px;
+}
+
+html[data-font-size="md"] {
+  font-size: 16px;
+}
+
+html[data-font-size="lg"] {
+  font-size: 18px;
+}
+
 @layer base {
   * {
     border-radius: 0px !important;
   }
 
   body {
-    background-color: #FAFAF9;
-    color: #1A1A1A;
-    font-family: 'Inter', sans-serif;
+    background-color: #fafaf9;
+    color: #1a1a1a;
+    font-family: "Inter", sans-serif;
   }
 
-  h1, h2, h3 {
-    font-family: 'Baskervville', serif;
+  h1,
+  h2,
+  h3 {
+    font-family: "Baskervville", serif;
   }
 }
