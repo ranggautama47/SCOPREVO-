@@ -1,54 +1,57 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { networkState } from "@/services/resilience/network-state";
+import { computed } from 'vue'
+import { networkState } from '@/services/resilience/network-state'
+import { useI18n } from '@/composables/useI18n'
+
+const { t } = useI18n()
 
 const stateClasses = computed(() => {
   if (networkState.value.showRecoveredToast) {
-    return 'bg-[#2A9D8F] text-[#FAFAF9]';
+    return 'bg-[#2A9D8F] text-[#FAFAF9]'
   }
   switch (networkState.value.status) {
     case 'OFFLINE':
-      return 'bg-[#E63946] text-[#FAFAF9]';
+      return 'bg-[#E63946] text-[#FAFAF9]'
     case 'SERVER_ERROR':
-      return 'bg-[#F4A261] text-[#1A1A1A]';
+      return 'bg-[#F4A261] text-[#1A1A1A]'
     case 'SLOW_NETWORK':
-      return 'bg-[#FDFFB6] text-[#1A1A1A]';
+      return 'bg-[#FDFFB6] text-[#1A1A1A]'
     default:
-      return 'bg-[#FDFFB6] text-[#1A1A1A]';
+      return 'bg-[#FDFFB6] text-[#1A1A1A]'
   }
-});
+})
 
 const stateTitle = computed(() => {
   if (networkState.value.showRecoveredToast) {
-    return 'KONEKSI KEMBALI NORMAL';
+    return t('shell.network.recovered.title')
   }
   switch (networkState.value.status) {
     case 'OFFLINE':
-      return 'INTERNET TERPUTUS';
+      return t('shell.network.offline.title')
     case 'SERVER_ERROR':
-      return 'GANGGUAN SERVER';
+      return t('shell.network.serverError.title')
     case 'SLOW_NETWORK':
-      return 'KONEKSI LAMBAT / TIDAK STABIL';
+      return t('shell.network.slowNetwork.title')
     default:
-      return 'KONEKSI LAMBAT / TIDAK STABIL';
+      return t('shell.network.slowNetwork.title')
   }
-});
+})
 
 const stateMessage = computed(() => {
   if (networkState.value.showRecoveredToast) {
-    return 'Data berhasil disinkronkan kembali dengan server SCOPREVO.';
+    return t('shell.network.recovered.message')
   }
   switch (networkState.value.status) {
     case 'OFFLINE':
-      return 'Koneksi internet Anda terputus total. SCOPREVO menampilkan data lokal terakhir yang tersedia.';
+      return t('shell.network.offline.message')
     case 'SERVER_ERROR':
-      return 'Koneksi ke server SCOPREVO sedang mengalami gangguan. Data lokal terakhir tetap ditampilkan. Silakan coba lagi beberapa saat.';
+      return t('shell.network.serverError.message')
     case 'SLOW_NETWORK':
-      return 'Sinyal internet Anda lemah atau tidak stabil. SCOPREVO beralih menggunakan data lokal.';
+      return t('shell.network.slowNetwork.message')
     default:
-      return 'Sinyal internet Anda lemah atau tidak stabil. SCOPREVO beralih menggunakan data lokal.';
+      return t('shell.network.slowNetwork.message')
   }
-});
+})
 </script>
 
 <template>

@@ -5,6 +5,7 @@ import { Bell } from "lucide-vue-next";
 import { useAuthStore } from "../../stores/auth";
 import { swrService } from "../../services/resilience/swr.service";
 import { setupNetworkListeners } from "../../services/resilience/network-state";
+import { useI18n } from "@/composables/useI18n";
 
 const authStore = useAuthStore();
 const router = useRouter();
@@ -14,6 +15,8 @@ const showBellPopover = ref(false);
 const showUserPopover = ref(false);
 const bellRef = ref<HTMLElement | null>(null);
 const userRef = ref<HTMLElement | null>(null);
+
+const { t } = useI18n();
 
 onMounted(async () => {
   setupNetworkListeners();
@@ -77,7 +80,7 @@ function handleLogout() {
   >
     <div ref="bellRef" class="relative">
       <button
-        title="Notifications"
+        :title="t('shell.topbar.notifications')"
         @click="toggleBell"
         class="relative bg-[#FAFAF9] border-2 border-[#1A1A1A] p-2 rounded-none shadow-[2px_2px_0px_0px_#1A1A1A] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
       >
@@ -96,17 +99,18 @@ function handleLogout() {
         <p
           class="font-['JetBrains_Mono',monospace] text-[10px] uppercase tracking-wider text-[#1A1A1A]/70 mb-2 border-b border-[#1A1A1A]/20 pb-1"
         >
-          NOTIFICATIONS
+          {{ t('shell.topbar.account') }}
         </p>
         <p
           v-if="pendingCount === 0"
           class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]"
         >
-          No pending confirmations
+          {{ t('shell.topbar.noPendingConfirmations') }}
         </p>
         <p v-else class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]">
-          {{ pendingCount }} pending confirmation{{
-            pendingCount === 1 ? "" : "s"
+          {{ pendingCount === 1
+            ? t('shell.topbar.pendingConfirmation', { count: pendingCount })
+            : t('shell.topbar.pendingConfirmations', { count: pendingCount })
           }}
         </p>
       </div>
@@ -114,11 +118,11 @@ function handleLogout() {
 
     <div ref="userRef" class="relative">
       <button
-        title="User Profile"
+        :title="t('shell.topbar.userProfile')"
         @click="toggleUser"
         class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-2 rounded-none shadow-[2px_2px_0px_0px_#1A1A1A] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wider"
       >
-        {{ authStore.account?.name || "User" }}
+        {{ authStore.account?.name || t('shell.topbar.user') }}
       </button>
       <div
         v-if="showUserPopover"
@@ -127,12 +131,12 @@ function handleLogout() {
         <p
           class="font-['JetBrains_Mono',monospace] text-[10px] uppercase tracking-wider text-[#1A1A1A]/70 mb-2 border-b border-[#1A1A1A]/20 pb-1"
         >
-          ACCOUNT
+          {{ t('shell.topbar.account') }}
         </p>
         <p
           class="font-['Baskervville',serif] text-base text-[#1A1A1A] leading-tight"
         >
-          {{ authStore.account?.name || "User" }}
+          {{ authStore.account?.name || t('shell.topbar.user') }}
         </p>
         <p
           v-if="authStore.account?.email"
@@ -144,7 +148,7 @@ function handleLogout() {
           @click="handleLogout"
           class="mt-3 w-full bg-[#E63946] text-[#FAFAF9] border-2 border-[#1A1A1A] px-3 py-2 font-['Inter',sans-serif] text-xs font-semibold uppercase tracking-wide rounded-none shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#991B1B] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
         >
-          LOGOUT
+          {{ t('shell.topbar.logout') }}
         </button>
       </div>
     </div>

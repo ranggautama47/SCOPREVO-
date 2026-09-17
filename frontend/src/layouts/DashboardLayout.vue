@@ -10,7 +10,9 @@ import {
   Settings,
   LogOut,
 } from "lucide-vue-next";
+import { useI18n } from "../composables/useI18n";
 
+const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
@@ -31,10 +33,10 @@ function logout() {
 }
 
 const navItems = [
-  { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-  { name: "Projects", path: "/projects", icon: FolderKanban },
-  { name: "History", path: "/history", icon: History },
-  { name: "Settings", path: "/settings", icon: Settings },
+  { key: "dashboard", path: "/dashboard", icon: LayoutDashboard },
+  { key: "projects", path: "/projects", icon: FolderKanban },
+  { key: "history", path: "/history", icon: History },
+  { key: "settings", path: "/settings", icon: Settings },
 ];
 
 function isActive(path: string): boolean {
@@ -49,9 +51,9 @@ function isActive(path: string): boolean {
       v-if="!isDrawerOpen"
       @click="toggleDrawer"
       class="md:hidden fixed top-4 left-4 z-30 bg-sage border-2 border-nearBlack px-3 py-2 font-mono text-sm"
-      aria-label="Open menu"
+      :aria-label="t('shell.sidebar.openMenu')"
     >
-      ☰ MENU
+      ☰ {{ t("shell.sidebar.menu") }}
     </button>
 
     <!-- Backdrop for mobile drawer -->
@@ -75,7 +77,7 @@ function isActive(path: string): boolean {
             <!-- Brand Logo -->
             <img
               src="/asset/logo.png"
-              alt="SCOPREVO Logo"
+              :alt="t('shell.sidebar.logoAlt')"
               class="w-10 h-10 object-contain border-2 border-nearBlack bg-white p-1 rounded-none shadow-[2px_2px_0px_0px_#1A1A1A] select-none"
               draggable="false"
             />
@@ -88,7 +90,7 @@ function isActive(path: string): boolean {
               <p
                 class="font-mono text-[10px] uppercase tracking-wider mt-1 text-nearBlack/70"
               >
-                B2B Workspace
+                {{ t("shell.sidebar.workspaceType") }}
               </p>
             </div>
           </div>
@@ -96,7 +98,7 @@ function isActive(path: string): boolean {
             v-if="isDrawerOpen"
             @click="closeDrawer"
             class="md:hidden font-mono text-xl"
-            aria-label="Close menu"
+            :aria-label="t('shell.sidebar.closeMenu')"
           >
             ✕
           </button>
@@ -109,7 +111,7 @@ function isActive(path: string): boolean {
       >
         <div v-if="authStore.account" class="overflow-hidden pr-2">
           <p class="font-mono text-[9px] uppercase tracking-wider opacity-60">
-            User
+            {{ t("shell.topbar.user") }}
           </p>
           <p class="font-sans text-xs font-semibold truncate text-nearBlack">
             {{ authStore.account.name }}
@@ -118,7 +120,7 @@ function isActive(path: string): boolean {
         <!-- Button Logout Merah Brutalist (Compact Danger Button) -->
         <button
           @click="logout"
-          title="Logout"
+          :title="t('shell.topbar.logout')"
           class="bg-[#E63946] text-white border border-nearBlack p-1.5 rounded-none shadow-[2px_2px_0px_0px_#1A1A1A] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
         >
           <LogOut class="w-3.5 h-3.5" />
@@ -140,17 +142,17 @@ function isActive(path: string): boolean {
           ]"
         >
           <component :is="item.icon" class="w-4 h-4" />
-          <span>{{ item.name }}</span>
+          <span>{{ t(`shell.sidebar.${item.key}`) }}</span>
         </router-link>
       </nav>
 
       <!-- Primary CTA at bottom (+ NEW PROJECT) -->
-      <div class="p-4  bg-sage">
+      <div class="p-4 bg-sage">
         <router-link
           to="/projects"
           class="w-full block bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-4 py-3 font-ui text-xs uppercase font-semibold tracking-wider shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none text-center transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A]"
         >
-          + NEW PROJECT
+          + {{ t("shell.sidebar.newProject") }}
         </router-link>
       </div>
     </aside>
