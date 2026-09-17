@@ -2,6 +2,9 @@
 import { onMounted, ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/auth";
+import { useI18n } from "../../composables/useI18n";
+
+const { t, locale } = useI18n();
 import type { OverviewData, Project } from "../../types/api";
 import { swrService } from "../../services/resilience/swr.service";
 import {
@@ -62,7 +65,7 @@ async function fetchDashboardData() {
   error.value = null;
   const accountId = authStore.account?.id;
   if (!accountId) {
-    error.value = "Account not found";
+    error.value = t("dashboard.accountNotFound");
     isLoading.value = false;
     return;
   }
@@ -73,8 +76,9 @@ async function fetchDashboardData() {
     ]);
     overviewData.value = overviewRes;
     projects.value = projectsRes;
-  } catch (err: any) {
-    error.value = err.message || "Failed to load dashboard";
+  } catch (err: unknown) {
+    error.value =
+      err instanceof Error ? err.message : t("dashboard.failedOverview");
   } finally {
     isLoading.value = false;
   }
@@ -89,7 +93,7 @@ function navigateToBatch(id: string) {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("id-ID", {
+  return new Date(dateStr).toLocaleDateString(locale.value, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -97,7 +101,7 @@ function formatDate(dateStr: string): string {
 }
 
 function formatFullDate(date: Date = new Date()): string {
-  return date.toLocaleDateString("id-ID", {
+  return date.toLocaleDateString(locale.value, {
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -107,14 +111,20 @@ function formatFullDate(date: Date = new Date()): string {
 
 function getGreeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
+  if (hour < 12) return t("dashboard.greetingMorning");
+  if (hour < 18) return t("dashboard.greetingAfternoon");
+  return t("dashboard.greetingEvening");
 }
 
 function getClientName(projectId: string): string {
   const project = projects.value.find((p) => p.id === projectId);
   return project?.clientName || "";
+}
+
+function formatItemCount(count: number): string {
+  return count === 1
+    ? t("dashboard.itemsSingle", { count })
+    : t("dashboard.itemsPlural", { count });
 }
 
 onMounted(() => {
@@ -124,7 +134,7 @@ onMounted(() => {
 
 <template>
   <section class="p-6 md:p-10 max-w-[1300px] mx-auto min-h-screen bg-[#FAFAF9]">
-     <!-- TOP BAR -->
+    <!-- TOP BAR -->
     <div class="flex items-center justify-between mb-6">
       <div class="flex items-center gap-4">
         <!-- Breadcrumb -->
@@ -133,7 +143,7 @@ onMounted(() => {
             to="/dashboard"
             class="font-['JetBrains_Mono',monospace] text-lg font-bold uppercase tracking-wider text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:underline decoration-[#DCCCFF] decoration-2 underline-offset-4 transition-all"
           >
-            WORKSPACE
+            {{ t("dashboard.breadcrumb") }}
           </router-link>
         </nav>
 
@@ -145,7 +155,8 @@ onMounted(() => {
           <p
             class="font-['Baskervville',serif] text-lg font-normal text-[#1A1A1A] leading-tight"
           >
-            {{ getGreeting() }}, {{ authStore.account?.name || "User" }}
+            {{ getGreeting() }},
+            {{ authStore.account?.name || t("dashboard.userFallback") }}
           </p>
           <p
             class="font-['Noto_Serif',serif] text-lg text-[#1A1A1A] leading-tight"
@@ -164,12 +175,12 @@ onMounted(() => {
       <h1
         class="font-['Baskervville',serif] text-4xl md:text-5xl font-normal leading-[1.1] tracking-tight text-[#1A1A1A]"
       >
-        Overview
+        {{ t("dashboard.title") }}
       </h1>
       <p
         class="font-['Noto_Serif',serif] text-base leading-[1.6] text-[#1A1A1A]/60 mt-2"
       >
-        Here is a summary of your workspace activity.
+        {{ t("dashboard.subtitle") }}
       </p>
     </div>
 
@@ -179,7 +190,7 @@ onMounted(() => {
       class="flex items-center gap-2 font-['JetBrains_Mono',monospace] text-sm text-[#1A1A1A]/60 py-12"
     >
       <span class="animate-pulse">■</span>
-      <span>Loading dashboard...</span>
+      <span>{{ t("dashboard.loadingOverview") }}</span>
     </div>
 
     <!-- Error State -->
@@ -202,7 +213,7 @@ onMounted(() => {
             <p
               class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wider text-[#1A1A1A]/70"
             >
-              ACTIVE PROJECTS
+              {{ t("dashboard.statActiveProjects") }}
             </p>
             <FolderKanban class="w-4 h-4 text-[#1A1A1A]/70" />
           </div>
@@ -221,7 +232,7 @@ onMounted(() => {
             <p
               class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wider text-[#1A1A1A]/70"
             >
-              REVISIONS USED
+              {{ t("dashboard.statRevisionsUsed") }}
             </p>
             <History class="w-4 h-4 text-[#1A1A1A]/70" />
           </div>
@@ -259,7 +270,7 @@ onMounted(() => {
             <p
               class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wider text-[#1A1A1A]/70"
             >
-              REVISIONS LEFT
+              {{ t("dashboard.statRevisionsLeft") }}
             </p>
             <Hourglass class="w-4 h-4 text-[#1A1A1A]/70" />
           </div>
@@ -278,7 +289,7 @@ onMounted(() => {
             <p
               class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wider text-[#1A1A1A]/70"
             >
-              PENDING REVIEW
+              {{ t("dashboard.statPendingConfirmations") }}
             </p>
             <AlertCircle class="w-4 h-4 text-[#E63946]" />
           </div>
@@ -296,13 +307,13 @@ onMounted(() => {
           <h2
             class="font-['Baskervville',serif] text-2xl font-normal leading-[1.3] text-[#1A1A1A]"
           >
-            Recent Projects
+            {{ t("dashboard.recentProjects") }}
           </h2>
           <router-link
             to="/projects"
             class="font-['Inter',sans-serif] text-sm font-medium text-[#1A1A1A] hover:underline hover:decoration-[#DCCCFF] hover:decoration-2 underline-offset-2 flex items-center gap-1"
           >
-            <span>View All</span>
+            <span>{{ t("dashboard.viewAll") }}</span>
             <span class="font-mono text-xs">&rarr;</span>
           </router-link>
         </div>
@@ -319,10 +330,10 @@ onMounted(() => {
             draggable="false"
           />
           <p class="font-['Baskervville',serif] text-xl text-[#1A1A1A]/60">
-            No recent projects
+            {{ t("dashboard.emptyRecent") }}
           </p>
           <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]/40 mt-2">
-            Create your first project to get started
+            {{ t("dashboard.emptyRecentDesc") }}
           </p>
         </div>
 
@@ -342,7 +353,7 @@ onMounted(() => {
                 <span
                   class="bg-[#DCFCE7] text-[#166534] border-2 border-[#1A1A1A] px-2 py-0.5 font-['JetBrains_Mono',monospace] text-[10px] uppercase font-bold tracking-wider"
                 >
-                  ACTIVE
+                  {{ t("dashboard.projectActive") }}
                 </span>
                 <ExternalLink
                   class="w-4 h-4 text-[#1A1A1A] opacity-60 group-hover:opacity-100 transition-opacity duration-150"
@@ -370,13 +381,17 @@ onMounted(() => {
                   <span
                     class="font-['JetBrains_Mono',monospace] text-[10px] font-bold text-[#1A1A1A] uppercase"
                   >
-                    Quota
+                    {{ t("dashboard.quotaLabel") }}
                   </span>
                   <span
                     class="font-['JetBrains_Mono',monospace] text-[10px] text-[#1A1A1A]/70"
                   >
-                    {{ project.usedRevisions ?? 0 }} /
-                    {{ project.totalAllowedRevisions ?? 0 }} used
+                    {{
+                      t("dashboard.quotaUsed", {
+                        used: project.usedRevisions ?? 0,
+                        allowed: project.totalAllowedRevisions ?? 0,
+                      })
+                    }}
                   </span>
                 </div>
                 <div
@@ -414,7 +429,7 @@ onMounted(() => {
                   :class="
                     (project.documentCount ?? 0) === 0 ? 'opacity-40' : ''
                   "
-                  title="Attached Documents"
+                  :title="t('dashboard.attachedDocuments')"
                 >
                   <FileText class="w-3 h-3" />
                   {{ project.documentCount ?? 0 }}
@@ -431,13 +446,17 @@ onMounted(() => {
           <h2
             class="font-['Baskervville',serif] text-2xl font-normal leading-[1.3] text-[#1A1A1A]"
           >
-            Recent Revision Batches
+            {{ t("dashboard.recentBatches") }}
           </h2>
           <span
             v-if="overviewData?.recentBatches?.length"
             class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase tracking-wider text-[#1A1A1A]/70"
           >
-            {{ overviewData.recentBatches.length }} BATCHES
+            {{
+              t("dashboard.batchCount", {
+                count: overviewData.recentBatches.length,
+              })
+            }}
           </span>
         </div>
 
@@ -453,10 +472,10 @@ onMounted(() => {
             draggable="false"
           />
           <p class="font-['Baskervville',serif] text-xl text-[#1A1A1A]/70">
-            No revision batches available yet.
+            {{ t("dashboard.emptyBatches") }}
           </p>
           <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]/50 mt-1">
-            Revision batch activity will appear here when available.
+            {{ t("dashboard.emptyBatchesDesc") }}
           </p>
         </div>
 
@@ -485,7 +504,7 @@ onMounted(() => {
                 <span
                   class="font-['JetBrains_Mono',monospace] text-xs text-[#1A1A1A]/50"
                 >
-                  • {{ batch.itemCount }} items
+                  • {{ formatItemCount(batch.itemCount) }}
                 </span>
               </div>
 
@@ -520,7 +539,7 @@ onMounted(() => {
           <nav
             v-if="totalBatchPages > 1"
             class="flex items-center justify-center gap-2 pt-2"
-            aria-label="Revision batches pagination"
+            :aria-label="t('dashboard.paginationAria')"
           >
             <button
               type="button"
@@ -528,7 +547,7 @@ onMounted(() => {
               :disabled="currentBatchPage === 1"
               class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase border-2 border-[#1A1A1A] rounded-none bg-[#FAFAF9] text-[#1A1A1A] px-3 py-1.5 shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#DCCCFF] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              &larr; PREV
+              {{ t("dashboard.paginationPrev") }}
             </button>
 
             <button
@@ -556,7 +575,7 @@ onMounted(() => {
               :disabled="currentBatchPage === totalBatchPages"
               class="font-['JetBrains_Mono',monospace] text-xs font-bold uppercase border-2 border-[#1A1A1A] rounded-none bg-[#FAFAF9] text-[#1A1A1A] px-3 py-1.5 shadow-[2px_2px_0px_0px_#1A1A1A] hover:bg-[#DCCCFF] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              NEXT &rarr;
+              {{ t("dashboard.paginationNext") }} &rarr;
             </button>
           </nav>
         </div>

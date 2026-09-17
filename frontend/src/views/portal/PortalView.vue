@@ -3,6 +3,9 @@ import { onMounted, ref, computed, watch } from "vue";
 import { useRoute } from "vue-router";
 import { apiClient, ApiError } from "../../api/client";
 import type { PortalBatchResponse, ScopeStatus } from "../../types/api";
+import { useI18n } from "../../composables/useI18n";
+
+const { t, locale } = useI18n();
 
 const route = useRoute();
 const token = computed(() => route.params.token as string);
@@ -36,16 +39,25 @@ async function fetchPortalData() {
 }
 
 function formatDate(dateStr: string | undefined): string {
-  if (!dateStr) return "Unknown date";
+  if (!dateStr) return t("portal.unknownDate");
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "Unknown date";
-  return d.toLocaleString("id-ID", {
+  if (isNaN(d.getTime())) return t("portal.unknownDate");
+  return d.toLocaleString(locale.value, {
     day: "numeric",
     month: "long",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function getScopeStatusLabel(status: ScopeStatus): string {
+  switch (status) {
+    case "IN_SCOPE": return t("batch.inScope");
+    case "OUT_OF_SCOPE": return t("batch.outOfScope");
+    case "NEEDS_REVIEW": return t("batch.needsReview");
+    default: return status;
+  }
 }
 
 function getShortId(id: string): string {
@@ -112,9 +124,9 @@ watch(
       class="min-h-screen flex items-center justify-center flex-col gap-2 px-4"
     >
       <span class="animate-pulse font-mono text-sm text-[#1A1A1A]/60">■</span>
-      <span class="font-mono text-sm text-[#1A1A1A]/60"
-        >Loading portal data...</span
-      >
+       <span class="font-mono text-sm text-[#1A1A1A]/60"
+         >{{ t("portal.loading") }}</span
+       >
     </div>
 
     <!-- Not Found State -->
@@ -125,7 +137,7 @@ watch(
       <p
         class="font-editorial text-xl font-normal leading-[1.3] text-[#1A1A1A]/60"
       >
-        This link is invalid or has expired.
+         {{ t("portal.notFound") }}
       </p>
     </div>
 
@@ -138,13 +150,13 @@ watch(
         class="border-2 border-[#E63946] bg-[#FEE2E2] p-4 rounded-none max-w-md text-[#991B1B]"
       >
         <p class="font-body text-base mb-4">
-          Unable to load portal data. Please check your connection.
+           {{ t("portal.networkError") }}
         </p>
         <button
           @click="retryFetch"
           class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm uppercase font-semibold tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A]"
         >
-          Retry
+          {{ t("portal.retry") }}
         </button>
       </div>
     </div>
@@ -166,14 +178,14 @@ watch(
               draggable="false"
             />
 
-            <span class="font-editorial text-2xl md:text-3xl text-[#1A1A1A]"
-              >SCOPREVO</span
-            >
+           <span class="font-editorial text-2xl md:text-3xl text-[#1A1A1A]"
+             >{{ t("portal.heading") }}</span
+           >
           </div>
-          <span
-            class="font-mono text-xs uppercase tracking-widest text-[#1A1A1A]/70"
-            >CLIENT PORTAL</span
-          >
+           <span
+             class="font-mono text-xs uppercase tracking-widest text-[#1A1A1A]/70"
+             >{{ t("portal.clientPortal") }}</span
+           >
         </div>
 
         <hr class="border-b-2 border-[#1A1A1A] my-6" />
@@ -183,7 +195,7 @@ watch(
           <div>
             <span
               class="font-mono text-xs uppercase tracking-wider text-[#1A1A1A]/70"
-              >DATE</span
+              >               {{ t("portal.dateLabel") }}</span
             >
             <p
               class="font-mono text-xs uppercase tracking-wider text-[#1A1A1A] mt-0.5"
@@ -194,7 +206,7 @@ watch(
           <div>
             <span
               class="font-mono text-xs uppercase tracking-wider text-[#1A1A1A]/70"
-              >REVISION ID</span
+              >               {{ t("portal.revisionId") }}</span
             >
             <p
               class="font-mono text-xs uppercase tracking-wider text-[#1A1A1A] mt-0.5"
@@ -203,10 +215,10 @@ watch(
             </p>
           </div>
           <div>
-            <span
-              class="font-mono text-xs uppercase tracking-wider text-[#1A1A1A]/70"
-              >CLIENT</span
-            >
+             <span
+               class="font-mono text-xs uppercase tracking-wider text-[#1A1A1A]/70"
+               >{{ t("portal.clientLabel") }}</span
+             >
             <p
               class="font-mono text-xs uppercase tracking-wider text-[#1A1A1A] mt-0.5"
             >
@@ -216,7 +228,7 @@ watch(
           <div>
             <span
               class="font-mono text-xs uppercase tracking-wider text-[#1A1A1A]/70"
-              >PORTAL ID</span
+              >               {{ t("portal.portalId") }}</span
             >
             <p
               class="font-mono text-xs uppercase tracking-wider text-[#1A1A1A] mt-0.5"
@@ -229,10 +241,10 @@ watch(
         <!-- Quota Row (P3 - Mandatory) -->
         <div class="mb-6">
           <div class="font-mono text-xs uppercase font-bold text-[#1A1A1A]">
-            REVISION QUOTA: {{ batchData.batch.project.usedRevisions }}/{{
-              batchData.batch.project.totalAllowedRevisions
-            }}
-            USED
+           {{ t("portal.quotaLabel") }}: {{ batchData.batch.project.usedRevisions }}/{{
+               batchData.batch.project.totalAllowedRevisions
+             }}
+             {{ t("portal.quotaUsed") }}
             <span
               :class="
                 batchData.batch.project.remainingRevisions === 0
@@ -240,7 +252,7 @@ watch(
                   : 'text-[#1A1A1A]'
               "
             >
-              • {{ batchData.batch.project.remainingRevisions }} REMAINING
+               • {{ batchData.batch.project.remainingRevisions }} {{ t("portal.quotaRemaining") }}
             </span>
           </div>
         </div>
@@ -250,11 +262,11 @@ watch(
         <!-- Headline Section (P5) -->
         <div class="text-center mb-8">
           <h1 class="font-editorial text-3xl md:text-5xl text-[#1A1A1A] mb-3">
-            Scope Review & Confirmation
+             {{ t("portal.scopeReview") }}
           </h1>
           <div class="w-16 h-1 bg-[#1A1A1A] mx-auto mb-4"></div>
           <p class="font-body text-sm text-center text-[#1A1A1A]/70 mb-8">
-            Please review the defined scope items below for final approval.
+             {{ t("portal.reviewItems") }}
           </p>
         </div>
 
@@ -265,7 +277,7 @@ watch(
           <h2
             class="font-editorial text-2xl font-normal leading-[1.3] text-[#1A1A1A] mb-3"
           >
-            AI Summary
+             {{ t("portal.aiSummary") }}
           </h2>
           <p
             v-if="batchData.batch.summary"
@@ -274,20 +286,20 @@ watch(
             {{ batchData.batch.summary }}
           </p>
           <p v-else class="font-body text-sm text-[#1A1A1A]/40">
-            No summary available.
+             {{ t("portal.noSummary") }}
           </p>
         </div>
 
-        <!-- Revision Items List (P6, P7, Q2) -->
+        <!--              {{ t("portal.itemsTitle") }} List (P6, P7, Q2) -->
         <div
           v-if="batchData.batch.items.length === 0"
           class="bg-[#FAFAF9] border-2 border-dashed border-[#1A1A1A]/30 p-12 rounded-none text-center mb-8"
         >
           <p class="font-editorial text-xl text-[#1A1A1A]/60">
-            No items extracted
+             {{ t("portal.noItems") }}
           </p>
           <p class="font-body text-sm text-[#1A1A1A]/40 mt-2">
-            The AI could not identify structured revisions from this feedback.
+             {{ t("portal.noItemsDesc") }}
           </p>
         </div>
 
@@ -303,7 +315,7 @@ watch(
             >
               <div class="flex items-center gap-2">
                 <span class="font-mono text-xs text-[#1A1A1A]/70"
-                  >ITEM {{ String(index + 1).padStart(2, "0") }}</span
+                  >{{ t("portal.itemLabel") }} {{ String(index + 1).padStart(2, "0") }}</span
                 >
                 <span
                   v-if="item.category"
@@ -313,7 +325,7 @@ watch(
                 </span>
               </div>
               <span :class="getScopeStatusBadgeClass(item.scopeStatus)">
-                {{ item.scopeStatus.replace("_", " ") }}
+                {{ getScopeStatusLabel(item.scopeStatus) }}
               </span>
             </div>
 
@@ -339,7 +351,7 @@ watch(
               class="border-l-4 border-[#1A1A1A] pl-4 py-1 mt-4 bg-transparent"
             >
               <span class="font-mono text-xs font-bold text-[#1A1A1A] mr-1"
-                >REASON:</span
+                >                 {{ t("portal.reasonLabel") }}</span
               >
               <span class="font-body text-sm text-[#1A1A1A]/80">{{
                 item.reason
@@ -354,16 +366,14 @@ watch(
           class="space-y-4"
         >
           <p class="font-body text-sm text-center text-[#1A1A1A]/80">
-            Review items carefully and confirm to proceed.
+            {{ t("portal.reviewConfirmPrompt") }}
           </p>
           <button
             @click="handleConfirm"
             :disabled="isConfirming"
             class="w-full bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] py-4 font-ui text-base font-bold uppercase tracking-wider shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {{
-              isConfirming ? "CONFIRMING..." : "CONFIRM & APPROVE REVISION →"
-            }}
+             {{ isConfirming ? t("portal.confirming") : t("portal.confirmBtn") }}
           </button>
         </div>
 
@@ -375,17 +385,17 @@ watch(
           <div
             class="bg-[#DCFCE7] text-[#166534] border-2 border-[#1A1A1A] p-4 text-center font-mono text-sm font-bold uppercase shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none"
           >
-            ✓ REVISION SCOPE APPROVED & LOCKED
+             {{ t("portal.approvedBadge") }}
           </div>
         </div>
 
         <!-- Footer -->
         <div class="mt-12 text-center">
           <p class="font-mono text-xs text-[#1A1A1A]/50">
-            © {{ currentYear }} SCOPREVO • ALL RIGHTS RESERVED
+             © {{ currentYear }} {{ t("portal.copyright") }}
           </p>
           <p class="font-mono text-xs text-[#1A1A1A]/50 mt-1">
-            SCOPREVO CLIENT PORTAL
+             {{ t("portal.clientPortalFooter") }}
           </p>
         </div>
       </div>

@@ -5,6 +5,9 @@ import type {
   ProjectDocument,
   ProjectDocumentExtractionStatus,
 } from "../../types/api";
+import { useI18n } from "../../composables/useI18n";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   projectId: string;
@@ -62,10 +65,10 @@ async function fetchDocuments() {
     const res = await apiClient.documents.list(props.projectId);
     documents.value = res.documents;
   } catch (err: unknown) {
-    errorMsg.value =
-      err instanceof ApiError
-        ? `${err.code}: ${err.message}`
-        : "Failed to load documents.";
+       errorMsg.value =
+         err instanceof ApiError
+           ? `${err.code}: ${err.message}`
+           : t("modals.docFailedLoad");
   } finally {
     isLoading.value = false;
   }
@@ -274,7 +277,7 @@ function statusLabel(status: ProjectDocumentExtractionStatus): string {
           <h2
             class="font-['Baskervville',serif] text-2xl font-normal leading-[1.2] text-[#1A1A1A]"
           >
-            Manage Documents
+             {{ t("modals.docTitle") }}
           </h2>
         </div>
         <button
@@ -311,7 +314,7 @@ function statusLabel(status: ProjectDocumentExtractionStatus): string {
           <p
             class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#1A1A1A]/70 font-bold"
           >
-            ATTACHED DOCUMENTS
+             {{ t("modals.attachedDocuments") }}
           </p>
           <p
             class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide text-[#1A1A1A]/80 font-bold"
@@ -326,7 +329,7 @@ function statusLabel(status: ProjectDocumentExtractionStatus): string {
           class="flex items-center gap-2 font-['JetBrains_Mono',monospace] text-sm text-[#1A1A1A]/60 py-6"
         >
           <span class="animate-pulse">■</span>
-          <span>Loading documents...</span>
+           <span>{{ t("modals.docLoading") }}</span>
         </div>
 
         <!-- Empty state -->
@@ -335,12 +338,12 @@ function statusLabel(status: ProjectDocumentExtractionStatus): string {
           class="border-2 border-dashed border-[#1A1A1A]/30 p-6 rounded-none text-center mb-4"
         >
           <p class="font-['Baskervville',serif] text-base text-[#1A1A1A]/60">
-            No documents attached.
+             {{ t("modals.docEmpty") }}
           </p>
           <p
             class="font-['Noto_Serif',serif] text-xs text-[#1A1A1A]/40 mt-1"
           >
-            Upload up to {{ MAX_DOCUMENTS }} files (.pdf, .docx, .md).
+             {{ t("modals.docUploadHint", { max: MAX_DOCUMENTS }) }}
           </p>
         </div>
 
@@ -387,7 +390,7 @@ function statusLabel(status: ProjectDocumentExtractionStatus): string {
                 :disabled="isDeleting"
                 class="font-['JetBrains_Mono',monospace] text-xs uppercase font-bold text-[#FAFAF9] bg-[#1A1A1A] border-2 border-[#E63946] px-3 py-1 rounded-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#E63946] transition-colors"
               >
-                {{ isDeleting ? "DELETING..." : "CONFIRM?" }}
+                 {{ isDeleting ? t("modals.deleting") : t("modals.docConfirmDelete") }}
               </button>
               <button
                 v-if="confirmDeleteId === doc.id"
@@ -396,7 +399,7 @@ function statusLabel(status: ProjectDocumentExtractionStatus): string {
                 :disabled="isDeleting"
                 class="font-['JetBrains_Mono',monospace] text-xs uppercase font-bold text-[#1A1A1A] bg-[#FAFAF9] border-2 border-[#1A1A1A] px-3 py-1 rounded-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#FDFFB6] transition-colors"
               >
-                CANCEL
+                 {{ t("modals.cancel") }}
               </button>
             </div>
           </li>
@@ -424,8 +427,7 @@ function statusLabel(status: ProjectDocumentExtractionStatus): string {
             v-if="isAtLimit"
             class="border-2 border-[#E63946] bg-[#FEE2E2] text-[#991B1B] px-3 py-2 font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide rounded-none"
           >
-            Document limit reached ({{ MAX_DOCUMENTS }}/{{ MAX_DOCUMENTS }}). Delete
-            a document to upload a new one.
+             {{ t("modals.docLimitReached", { max: MAX_DOCUMENTS }) }}
           </p>
 
           <!-- Pending file preview -->
@@ -446,21 +448,21 @@ function statusLabel(status: ProjectDocumentExtractionStatus): string {
               </p>
             </div>
             <div class="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                @click="cancelFileSelection"
-                :disabled="isUploading"
-                class="font-['JetBrains_Mono',monospace] text-xs uppercase font-bold text-[#1A1A1A] bg-[#FAFAF9] border-2 border-[#1A1A1A] px-3 py-1 rounded-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#FDFFB6] transition-colors"
-              >
-                CANCEL
-              </button>
+               <button
+                 type="button"
+                 @click="cancelFileSelection"
+                 :disabled="isUploading"
+                 class="font-['JetBrains_Mono',monospace] text-xs uppercase font-bold text-[#1A1A1A] bg-[#FAFAF9] border-2 border-[#1A1A1A] px-3 py-1 rounded-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#FDFFB6] transition-colors"
+               >
+                 {{ t("modals.cancel") }}
+               </button>
               <button
                 type="button"
                 @click="handleUpload"
                 :disabled="isUploading"
                 class="font-['JetBrains_Mono',monospace] text-xs uppercase font-bold text-[#FAFAF9] bg-[#006D77] border-2 border-[#1A1A1A] px-4 py-1 rounded-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#024f56] transition-colors shadow-[2px_2px_0px_0px_#1A1A1A]"
               >
-                {{ isUploading ? "UPLOADING..." : "UPLOAD" }}
+                 {{ isUploading ? t("modals.docUploading") : t("modals.docUpload") }}
               </button>
             </div>
           </div>
@@ -483,10 +485,10 @@ function statusLabel(status: ProjectDocumentExtractionStatus): string {
             <p
               class="font-['Inter',sans-serif] text-sm font-bold uppercase tracking-wide text-[#1A1A1A] group-hover:text-[#006D77]"
             >
-              {{ isDragging ? "DROP FILE HERE" : "DRAG & DROP FILE HERE OR CLICK TO BROWSE" }}
+               {{ isDragging ? t("modals.docDropHere") : t("modals.docClickToBrowse") }}
             </p>
             <p class="font-['Noto_Serif',serif] text-xs text-[#1A1A1A]/60">
-              Allowed: .pdf, .docx, .md · Max 2.00 MB
+              {{ t("modals.docAllowed") }}
             </p>
           </div>
 

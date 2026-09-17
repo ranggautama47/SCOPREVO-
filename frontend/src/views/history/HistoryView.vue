@@ -4,10 +4,13 @@ import { useRouter } from "vue-router";
 import type { RevisionBatchSummary, RevisionBatchStatus } from "../../types/api";
 import { useAuthStore } from "../../stores/auth";
 import { swrService } from "../../services/resilience/swr.service";
+import { useI18n } from "../../composables/useI18n";
 import UiStatusBadge from "../../components/ui/UiStatusBadge.vue";
 import UiEmptyState from "../../components/ui/UiEmptyState.vue";
 import AppTopbar from "../../components/features/AppTopbar.vue";
 import { Search } from "lucide-vue-next";
+
+const { t } = useI18n();
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -36,7 +39,7 @@ async function fetchHistory() {
   error.value = null;
   const accountId = authStore.account?.id;
   if (!accountId) {
-    error.value = "Account not found";
+     error.value = t("history.accountNotFound");
     isLoading.value = false;
     return;
   }
@@ -62,7 +65,7 @@ async function fetchHistory() {
     flat.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     allBatches.value = flat;
   } catch (err: any) {
-    error.value = err?.message || "Failed to load history.";
+     error.value = err?.message || t("history.failedLoad");
   } finally {
     isLoading.value = false;
   }
@@ -121,24 +124,24 @@ function openBatch(batch: BatchWithProject) {
     <!-- 1. HEADER NAV (Seragam dengan ProjectsView) -->
     <div class="flex items-center justify-between mb-6">
       <nav aria-label="Breadcrumb">
-        <router-link
-          to="/dashboard"
-          class="font-mono text-xs font-bold uppercase tracking-wider text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:underline decoration-[#DCCCFF] decoration-2 underline-offset-4 transition-all"
-        >
-          WORKSPACE
-        </router-link>
-        <span class="font-mono text-xs text-[#1A1A1A]/30">/</span>
-        <span class="font-mono text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">
-          HISTORY
-        </span>
-      </nav>
+         <router-link
+           to="/dashboard"
+           class="font-mono text-xs font-bold uppercase tracking-wider text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:underline decoration-[#DCCCFF] decoration-2 underline-offset-4 transition-all"
+         >
+           {{ t("history.breadcrumbWorkspace") }}
+         </router-link>
+         <span class="font-mono text-xs text-[#1A1A1A]/30">/</span>
+         <span class="font-mono text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">
+           {{ t("history.breadcrumbHistory") }}
+          </span>
+       </nav>
       <AppTopbar />
     </div>
 
     <!-- 2. JUDUL HALAMAN -->
     <div class="border-b-2 border-[#1A1A1A] pb-6">
-      <h1 class="font-['Baskervville',serif] text-4xl text-[#1A1A1A] mb-1">History</h1>
-      <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]/60">All revision batches across your projects.</p>
+       <h1 class="font-['Baskervville',serif] text-4xl text-[#1A1A1A] mb-1">{{ t("history.title") }}</h1>
+       <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]/60">{{ t("history.subtitle") }}</p>
     </div>
 
     <!-- 3. FILTER BAR -->
@@ -163,7 +166,7 @@ function openBatch(batch: BatchWithProject) {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Search project or client..."
+           :placeholder="t('history.searchPlaceholder')"
           class="bg-[#FAFAF9] border-2 border-[#1A1A1A] pl-9 pr-3 py-2 font-['Noto_Serif',serif] text-sm text-[#1A1A1A] rounded-none focus:outline-none focus:bg-[#FDFFB6] w-full md:w-64"
         />
       </div>
@@ -173,12 +176,12 @@ function openBatch(batch: BatchWithProject) {
       {{ error }}
     </div>
 
-    <div v-if="isLoading" class="text-center py-16 font-['JetBrains_Mono',monospace] text-sm text-[#1A1A1A]/50">Loading history...</div>
+       <div v-if="isLoading" class="text-center py-16 font-['JetBrains_Mono',monospace] text-sm text-[#1A1A1A]/50">{{ t("history.loading") }}</div>
 
     <UiEmptyState
       v-else-if="filteredBatches.length === 0"
-      title="No batches found"
-      subtitle="Try a different filter or submit your first revision."
+       :title="t('history.emptyTitle')"
+       :subtitle="t('history.emptyBody')"
     />
 
     <div v-else class="space-y-4">
@@ -203,7 +206,12 @@ function openBatch(batch: BatchWithProject) {
 
         <div class="flex flex-wrap items-center gap-3 mb-3">
           <span class="font-mono text-[10px] uppercase tracking-wider text-[#1A1A1A]/50">
-            {{ formatDate(batch.createdAt) }} • {{ batch.itemCount }} {{ batch.itemCount === 1 ? "item" : "items" }}
+            {{ formatDate(batch.createdAt) }} •
+            {{
+              batch.itemCount === 1
+                ? t("history.itemCount", { count: batch.itemCount })
+                : t("history.itemCountPlural", { count: batch.itemCount })
+            }}
           </span>
           <span v-if="batch.scopeCounts" class="flex gap-2">
             <UiStatusBadge status="IN_SCOPE" kind="scope" size="sm" />
@@ -220,7 +228,7 @@ function openBatch(batch: BatchWithProject) {
             @click="openBatch(batch)"
             class="font-['Inter',sans-serif] text-xs font-bold uppercase tracking-wider text-[#006D77] hover:underline cursor-pointer"
           >
-            VIEW BATCH →
+             {{ t('history.viewBatch') }}
           </button>
         </div>
       </article>

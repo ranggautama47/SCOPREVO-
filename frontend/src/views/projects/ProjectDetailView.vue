@@ -10,9 +10,12 @@ import type {
 import { useAuthStore } from "../../stores/auth";
 import { swrService } from "../../services/resilience/swr.service";
 import { networkState } from "../../services/resilience/network-state";
+import { useI18n } from "../../composables/useI18n";
 import UiQuotaBar from "../../components/ui/UiQuotaBar.vue";
 import ProjectDocumentModal from "../../components/features/ProjectDocumentModal.vue";
 import ManageProjectModal from "../../components/features/ManageProjectModal.vue";
+
+const { t, locale } = useI18n();
 
 const route = useRoute();
 const router = useRouter();
@@ -39,7 +42,7 @@ const isManageProjectModalOpen = ref(false);
 
 // Network status
 const isMutationsDisabled = computed(() =>
-  ['OFFLINE', 'BACKEND_DEGRADED'].includes(networkState.value.status),
+  ["OFFLINE", "BACKEND_DEGRADED"].includes(networkState.value.status),
 );
 
 function openDocModal() {
@@ -76,7 +79,7 @@ async function fetchProjectDetail() {
     batches.value = batchesRes;
   } catch (err: unknown) {
     error.value =
-      err instanceof ApiError ? err.message : "Failed to load project detail";
+      err instanceof ApiError ? err.message : t("projectDetail.failedLoad");
   } finally {
     isLoading.value = false;
   }
@@ -91,7 +94,7 @@ function scrollToFeedback() {
 }
 
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
+  return new Date(dateStr).toLocaleDateString(locale.value, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -108,6 +111,18 @@ function getStatusBadgeClass(status: RevisionBatchStatus): string {
       return "bg-[#DCFCE7] text-[#166534] border-2 border-[#1A1A1A]";
     default:
       return "bg-[#E5E7EB] text-[#1A1A1A] border-2 border-[#1A1A1A]";
+  }
+}
+function getBatchStatusLabel(status: RevisionBatchStatus): string {
+  switch (status) {
+    case "DRAFT":
+      return t("batch.statusDraft");
+    case "PENDING_CONFIRMATION":
+      return t("batch.statusPending");
+    case "APPROVED":
+      return t("batch.statusApproved");
+    default:
+      return status;
   }
 }
 
@@ -151,17 +166,17 @@ function clearError() {
 
 async function handleSubmitFeedback() {
   if (!rawInput.value.trim()) {
-    errorMsg.value = "Feedback cannot be empty.";
+    errorMsg.value = t("projectDetail.errEmptyFeedback");
     errorCode.value = "VALIDATION_ERROR";
     return;
   }
 
   if (isMutationsDisabled.value) {
     errorMsg.value =
-      networkState.value.status === 'OFFLINE'
-        ? 'Cannot submit feedback while offline.'
-        : 'Cannot submit feedback. Backend is degraded.';
-    errorCode.value = 'NETWORK_ERROR';
+      networkState.value.status === "OFFLINE"
+        ? t("projectDetail.errOffline")
+        : t("projectDetail.errDegraded");
+    errorCode.value = "NETWORK_ERROR";
     return;
   }
 
@@ -184,24 +199,23 @@ async function handleSubmitFeedback() {
       errorCode.value = err.code;
       switch (err.code) {
         case "QUOTA_EXHAUSTED":
-          errorMsg.value = "Quota exhausted. Wait for client approval.";
+          errorMsg.value = t("projectDetail.errQuotaExhausted");
           break;
         case "AI_PROCESSING_FAILED":
-          errorMsg.value = "AI analysis failed. Please try again.";
+          errorMsg.value = t("projectDetail.errAIProcessing");
           break;
         case "NETWORK_ERROR":
-          errorMsg.value =
-            "Unable to reach the server. Please check your connection.";
+          errorMsg.value = t("projectDetail.errNetwork");
           break;
         default:
           errorMsg.value =
             err.status && err.status >= 500
-              ? "Server error. Please try again later."
-              : "Failed to analyze feedback. Please try again.";
+              ? t("projectDetail.errServer")
+              : t("projectDetail.errFailedAnalyze");
           break;
       }
     } else {
-      errorMsg.value = "An unexpected error occurred.";
+      errorMsg.value = t("projectDetail.errUnexpected");
     }
   }
 }
@@ -229,7 +243,7 @@ function handleProjectDeleted() {
         to="/projects"
         class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#1A1A1A] hover:underline hover:decoration-[#DCCCFF] hover:decoration-2 transition-all duration-100"
       >
-        ← PROJECTS
+        ← {{ t("projectDetail.backToProjects") }}
       </router-link>
 
       <button
@@ -238,7 +252,7 @@ function handleProjectDeleted() {
         :disabled="isMutationsDisabled"
         class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-2.5 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
-        + SUBMIT FEEDBACK
+        + {{ t("projectDetail.submitFeedbackBtn") }}
       </button>
     </div>
 
@@ -248,7 +262,7 @@ function handleProjectDeleted() {
       class="flex items-center gap-2 font-['JetBrains_Mono',monospace] text-sm text-[#1A1A1A]/60 px-8 md:px-12 py-12"
     >
       <span class="animate-pulse">■</span>
-      <span>Loading project...</span>
+      <span>{{ t("projectDetail.loading") }}</span>
     </div>
 
     <!-- ── ERROR ────────────────────────────────────────────────── -->
@@ -273,18 +287,18 @@ function handleProjectDeleted() {
             v-if="project.status === 'COMPLETED'"
             class="bg-[#DCCCFF] text-[#1A1A1A] border-2 border-[#1A1A1A] px-2 py-0.5 font-['JetBrains_Mono',monospace] text-xs uppercase font-bold rounded-none"
           >
-            [COMPLETED]
+            [{{ t("projectDetail.statusCompleted") }}]
           </span>
         </div>
         <div class="flex flex-wrap items-center gap-3 mt-3">
-          <!-- Client tag (lavender) -->
           <span
             class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide bg-[#DCCCFF] text-[#1A1A1A] border border-[#1A1A1A] px-3 py-1 rounded-none font-bold"
           >
             {{ project.clientName }}
           </span>
           <span class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]/60">
-            Created {{ formatDate(project.createdAt) }}
+            {{ t("projectDetail.createdLabel") }}
+            {{ formatDate(project.createdAt) }}
           </span>
         </div>
       </div>
@@ -298,7 +312,7 @@ function handleProjectDeleted() {
           <p
             class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#1A1A1A]/70"
           >
-            TOTAL ALLOWED
+            {{ t("projectDetail.statTotalAllowed") }}
           </p>
           <p
             class="font-['JetBrains_Mono',monospace] text-5xl font-bold text-[#1A1A1A] leading-none mt-4"
@@ -314,7 +328,7 @@ function handleProjectDeleted() {
           <p
             class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#1A1A1A]/70"
           >
-            REVISIONS USED
+            {{ t("projectDetail.statRevisionsUsed") }}
           </p>
           <p
             class="font-['JetBrains_Mono',monospace] text-5xl font-bold text-[#1A1A1A] leading-none mt-2"
@@ -334,8 +348,12 @@ function handleProjectDeleted() {
             <p
               class="font-['JetBrains_Mono',monospace] text-xs text-[#1A1A1A]/60 mt-1"
             >
-              {{ project.usedRevisions }} /
-              {{ project.totalAllowedRevisions }} used
+              {{
+                t("projectDetail.quotaUsed", {
+                  used: project.usedRevisions,
+                  allowed: project.totalAllowedRevisions,
+                })
+              }}
             </p>
           </div>
         </div>
@@ -347,7 +365,7 @@ function handleProjectDeleted() {
           <p
             class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#1A1A1A]/70"
           >
-            REVISIONS REMAINING
+            {{ t("projectDetail.statRevisionsRemaining") }}
           </p>
           <p
             class="font-['JetBrains_Mono',monospace] text-5xl font-bold text-[#1A1A1A] leading-none mt-4"
@@ -357,7 +375,7 @@ function handleProjectDeleted() {
           <p
             class="font-['JetBrains_Mono',monospace] text-xs text-[#1A1A1A]/60 mt-2"
           >
-            available to use
+            {{ t("projectDetail.quotaRemainingSuffix") }}
           </p>
         </div>
       </div>
@@ -373,14 +391,17 @@ function handleProjectDeleted() {
             <h2
               class="font-['Baskervville',serif] text-2xl font-normal text-[#1A1A1A]"
             >
-              Recent Revision Batches
+              {{ t("projectDetail.recentBatches") }}
             </h2>
             <span
               v-if="batches.length > 0"
               class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide text-[#1A1A1A]/70"
-            >
-              {{ batches.length }}
-              {{ batches.length === 1 ? "BATCH" : "BATCHES" }}
+              >{{ batches.length }}
+              {{
+                batches.length === 1
+                  ? t("projectDetail.batchCount")
+                  : t("projectDetail.batchCountPlural")
+              }}
             </span>
           </div>
 
@@ -390,10 +411,10 @@ function handleProjectDeleted() {
             class="bg-[#FAFAF9] border-2 border-dashed border-[#1A1A1A]/30 p-10 rounded-none text-center"
           >
             <p class="font-['Baskervville',serif] text-xl text-[#1A1A1A]/60">
-              No revision batches yet
+              {{ t("projectDetail.emptyBatchesTitle") }}
             </p>
             <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]/40 mt-2">
-              Submit your first feedback to get AI analysis.
+              {{ t("projectDetail.emptyBatchesDesc") }}
             </p>
           </div>
 
@@ -414,11 +435,7 @@ function handleProjectDeleted() {
                         :class="getStatusBadgeClass(batch.status)"
                         class="px-2 py-0.5 font-['JetBrains_Mono',monospace] text-[10px] uppercase tracking-wide rounded-none font-bold"
                       >
-                        {{
-                          batch.status === "PENDING_CONFIRMATION"
-                            ? "PENDING"
-                            : batch.status
-                        }}
+                        {{ getBatchStatusLabel(batch.status) }}
                       </span>
                       <span
                         class="font-['Baskervville',serif] text-xl font-normal text-[#1A1A1A]"
@@ -436,8 +453,14 @@ function handleProjectDeleted() {
                       <span
                         class="font-['JetBrains_Mono',monospace] text-xs text-[#1A1A1A]/50"
                       >
-                        {{ batch.itemCount }} item{{
-                          batch.itemCount !== 1 ? "s" : ""
+                        {{
+                          batch.itemCount === 1
+                            ? t("projectDetail.itemCount", {
+                                count: batch.itemCount,
+                              })
+                            : t("projectDetail.itemCountPlural", {
+                                count: batch.itemCount,
+                              })
                         }}
                       </span>
                       <span
@@ -469,7 +492,7 @@ function handleProjectDeleted() {
                             : '',
                         ]"
                       >
-                        &larr; PREV
+                        {{ t("projectDetail.paginationPrev") }}
                       </button>
 
                       <button
@@ -501,7 +524,7 @@ function handleProjectDeleted() {
                             : '',
                         ]"
                       >
-                        NEXT &rarr;
+                        {{ t("projectDetail.paginationNext") }} &rarr;
                       </button>
                     </nav>
                   </div>
@@ -512,7 +535,7 @@ function handleProjectDeleted() {
                       @click.stop="navigateToBatch(batch.id)"
                       class="bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-['Inter',sans-serif] text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none cursor-pointer"
                     >
-                      VIEW DETAILS
+                      {{ t("projectDetail.viewDetails") }}
                     </button>
                   </div>
                 </div>
@@ -529,7 +552,7 @@ function handleProjectDeleted() {
             <p
               class="font-['JetBrains_Mono',monospace] text-xl uppercase tracking-widest text-[#1A1A1A] font-bold mb-3"
             >
-              PROJECT CONTEXT
+              {{ t("projectDetail.projectContext") }}
             </p>
             <hr class="border-t border-[#1A1A1A] mb-4" />
 
@@ -540,7 +563,8 @@ function handleProjectDeleted() {
               >
                 <span
                   class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide text-[#1A1A1A]/50 shrink-0"
-                  >CLIENT</span
+                >
+                  {{ t("projectDetail.clientLabel") }}</span
                 >
                 <span
                   class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A] text-right font-medium"
@@ -552,7 +576,8 @@ function handleProjectDeleted() {
               >
                 <span
                   class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide text-[#1A1A1A]/50 shrink-0"
-                  >CREATED</span
+                >
+                  {{ t("projectDetail.createdLabel") }}</span
                 >
                 <span
                   class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A] text-right"
@@ -564,7 +589,7 @@ function handleProjectDeleted() {
               >
                 <span
                   class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide text-[#1A1A1A]/50 shrink-0"
-                  >QUOTA</span
+                  >{{ t("projectDetail.quotaLabel") }}</span
                 >
                 <span
                   class="font-['JetBrains_Mono',monospace] text-sm text-[#1A1A1A] text-right"
@@ -578,13 +603,14 @@ function handleProjectDeleted() {
               >
                 <span
                   class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide text-[#1A1A1A]/50 shrink-0"
-                  >REVISIONS USED</span
+                  >{{ t("projectDetail.statRevisionsUsed") }}</span
                 >
                 <span
                   class="font-['JetBrains_Mono',monospace] text-xs text-[#1A1A1A]/70 text-right"
                 >
                   {{ project.usedRevisions }} /
-                  {{ project.totalAllowedRevisions }} revisions used
+                  {{ project.totalAllowedRevisions }}
+                  {{ t("projectDetail.revisionsUsedSuffix") }}
                 </span>
               </div>
               <UiQuotaBar
@@ -598,7 +624,7 @@ function handleProjectDeleted() {
               >
                 <span
                   class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide text-[#1A1A1A]/50 shrink-0"
-                  >REMAINING</span
+                  >{{ t("projectDetail.remainingLabel") }}</span
                 >
                 <span
                   class="font-['JetBrains_Mono',monospace] text-sm text-right font-bold"
@@ -606,7 +632,8 @@ function handleProjectDeleted() {
                     isQuotaExhausted ? 'text-[#E63946]' : 'text-[#006D77]'
                   "
                 >
-                  {{ project.remainingRevisions }} left
+                  {{ project.remainingRevisions }}
+                  {{ t("projectDetail.remainingSuffix") }}
                 </span>
               </div>
             </div>
@@ -618,7 +645,7 @@ function handleProjectDeleted() {
               title="Manage attached project documents"
               class="w-full mt-5 bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"
             >
-              MANAGE DOCUMENTS
+              {{ t("projectDetail.manageDocuments") }}
             </button>
 
             <!-- MANAGE PROJECT button (Neo-Brutalist theme) -->
@@ -628,7 +655,7 @@ function handleProjectDeleted() {
               title="Manage project settings (status, delete)"
               class="w-full mt-3 bg-[#DCCCFF] text-[#1A1A1A] border-2 border-[#1A1A1A] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"
             >
-              MANAGE PROJECT
+              {{ t("projectDetail.manageProject") }}
             </button>
           </div>
 
@@ -667,28 +694,28 @@ function handleProjectDeleted() {
           <p
             class="font-['JetBrains_Mono',monospace] text-[10px] uppercase tracking-widest text-[#006D77] mb-2 font-bold"
           >
-            NEXT ACTION
+            {{ t("projectDetail.nextAction") }}
           </p>
 
           <!-- Section title -->
           <h2
             class="font-['Baskervville',serif] text-2xl font-normal leading-[1.3] text-[#1A1A1A] mb-1"
           >
-            Submit Revision Feedback
+            {{ t("projectDetail.submitRevisionFeedback") }}
           </h2>
 
           <!-- Description -->
           <p
             class="font-['Noto_Serif',serif] text-sm leading-[1.6] text-[#1A1A1A]/70 mb-5"
           >
-            Paste raw client feedback below. AI will analyze and classify scope.
+            {{ t("projectDetail.submitFeedbackDesc") }}
           </p>
 
           <!-- Feedback Notes label -->
           <label
             class="block font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide text-[#1A1A1A] mb-2"
           >
-            FEEDBACK NOTES
+            {{ t("projectDetail.feedbackNotes") }}
           </label>
 
           <!-- Textarea -->
@@ -697,7 +724,7 @@ function handleProjectDeleted() {
             @input="clearError"
             :disabled="isSubmitting"
             class="bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] p-4 font-['Noto_Serif',serif] text-base leading-[1.6] rounded-none w-full outline-none focus:bg-[#FDFFB6] focus:outline-none placeholder:text-[#1A1A1A]/40 resize-y min-h-[180px] disabled:opacity-50"
-            placeholder="Detail the requested changes here..."
+            :placeholder="t('projectDetail.feedbackPlaceholder2')"
           ></textarea>
 
           <!-- Error block -->
@@ -723,7 +750,7 @@ function handleProjectDeleted() {
               @click="handleRetryFeedback"
               class="mt-3 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-['Inter',sans-serif] text-xs uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"
             >
-              Retry
+              {{ t("projectDetail.retryBtn") }}
             </button>
           </div>
 
@@ -734,7 +761,11 @@ function handleProjectDeleted() {
               :disabled="isQuotaExhausted || isSubmitting"
               class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-8 py-3 font-['Inter',sans-serif] text-sm uppercase font-semibold tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-x-0 disabled:translate-y-0 disabled:shadow-[4px_4px_0px_0px_#1A1A1A] cursor-pointer"
             >
-              {{ isQuotaExhausted ? "QUOTA EXHAUSTED" : "ANALYZE FEEDBACK" }}
+              {{
+                isQuotaExhausted
+                  ? t("projectDetail.quotaExhaustedBtn")
+                  : t("projectDetail.analyzeFeedback")
+              }}
             </button>
 
             <div
@@ -742,7 +773,7 @@ function handleProjectDeleted() {
               class="flex items-center gap-2 font-['JetBrains_Mono',monospace] text-sm text-[#1A1A1A]/70"
             >
               <span class="animate-pulse">■</span>
-              <span>Processing AI scope analysis...</span>
+              <span>{{ t("projectDetail.processing") }}</span>
             </div>
           </div>
         </div>
@@ -753,11 +784,13 @@ function handleProjectDeleted() {
         v-else
         class="border-2 border-[#1A1A1A] bg-[#FDFFB6] p-6 text-center rounded-none shadow-[4px_4px_0px_0px_#1A1A1A] mt-8"
       >
-        <p class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#1A1A1A] font-bold mb-1">
-          PROJECT COMPLETED
+        <p
+          class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#1A1A1A] font-bold mb-1"
+        >
+          {{ t("projectDetail.completedTitle") }}
         </p>
         <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]">
-          PROJECT COMPLETED — This project is closed. Reopen the project via Manage Project to submit additional revision work.
+          {{ t("projectDetail.completedBody") }}
         </p>
       </div>
     </div>

@@ -10,6 +10,10 @@ import type {
 } from "../../types/api";
 import { useAuthStore } from "../../stores/auth";
 import { swrService } from "../../services/resilience/swr.service";
+import { useI18n } from "../../composables/useI18n";
+import { Link2, Copy, ExternalLink, RefreshCw } from "lucide-vue-next";
+
+const { t, locale } = useI18n();
 
 const route = useRoute();
 const router = useRouter();
@@ -79,14 +83,40 @@ function retryFetch() {
 }
 
 function formatCreatedDate(dateStr: string | undefined): string {
-  if (!dateStr) return "Unknown date";
+  if (!dateStr) return t("batch.unknownDate");
   const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "Unknown date";
-  return d.toLocaleDateString("en-US", {
+  if (isNaN(d.getTime())) return t("batch.unknownDate");
+  return d.toLocaleDateString(locale.value, {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
+}
+
+function getBatchStatusLabel(status: RevisionBatchStatus): string {
+  switch (status) {
+    case "DRAFT":
+      return t("batch.statusDraft");
+    case "PENDING_CONFIRMATION":
+      return t("batch.statusPending");
+    case "APPROVED":
+      return t("batch.statusApproved");
+    default:
+      return status;
+  }
+}
+
+function getScopeStatusLabel(status: ScopeStatus): string {
+  switch (status) {
+    case "IN_SCOPE":
+      return t("batch.inScope");
+    case "OUT_OF_SCOPE":
+      return t("batch.outOfScope");
+    case "NEEDS_REVIEW":
+      return t("batch.needsReview");
+    default:
+      return status;
+  }
 }
 
 function getBatchStatusBadgeClass(status: RevisionBatchStatus): string {
@@ -153,25 +183,24 @@ async function handleShare() {
   } catch (err: unknown) {
     if (err instanceof ApiError) {
       if (err.code === "PROJECT_COMPLETED") {
-        shareError.value = "Project is completed. Reopen the project before sharing this batch.";
+        shareError.value = t("batch.errProjectCompleted");
         isSharing.value = false;
         return;
       }
       if (err.code === "INVALID_STATE" || err.status === 409) {
         await fetchBatchDetail(batchId.value);
         if (!effectivePortalUrl.value) {
-          shareError.value =
-            "This batch is already active, but its magic link is unavailable. Please refresh or contact support.";
+          shareError.value = t("batch.errMagicLinkUnavailable");
         }
         isSharing.value = false;
         return;
       }
       shareError.value =
         err.status && err.status >= 500
-          ? "Server error. Please try again later."
-          : "Failed to generate magic link. Please try again.";
+          ? t("batch.errServer")
+          : t("batch.errFailedGenerate");
     } else {
-      shareError.value = "An unexpected error occurred.";
+      shareError.value = t("batch.errUnexpected");
     }
   } finally {
     isSharing.value = false;
@@ -232,7 +261,7 @@ watch(
         @click="goBackToProject"
         class="font-mono text-xs uppercase tracking-widest text-[#1A1A1A] hover:underline hover:decoration-[#DCCCFF] hover:decoration-2 transition-all duration-100 cursor-pointer"
       >
-        ← Back to Project
+        {{ t("batch.backToProject") }}
       </button>
 
       <div v-if="batchData">
@@ -240,7 +269,7 @@ watch(
           :class="getBatchStatusBadgeClass(batchData.status)"
           class="font-mono text-xs uppercase tracking-wider px-3 py-1 rounded-none border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]"
         >
-          [{{ batchData.status.replace(/_/g, " ") }}]
+          [{{ getBatchStatusLabel(batchData.status) }}]
         </span>
       </div>
     </div>
@@ -251,7 +280,7 @@ watch(
       class="flex items-center gap-2 font-mono text-sm text-[#1A1A1A]/60 px-8 md:px-12 py-12"
     >
       <span class="animate-pulse">■</span>
-      <span>Loading batch analysis...</span>
+      <span>{{ t("batch.loading") }}</span>
     </div>
 
     <!-- ── NOT FOUND ────────────────────────────────────────────── -->
@@ -259,13 +288,13 @@ watch(
       <p
         class="font-editorial text-xl font-normal leading-[1.3] text-[#1A1A1A]/60"
       >
-        Batch not found or access denied.
+        {{ t("batch.notFound") }}
       </p>
       <router-link
         to="/projects"
         class="inline-block font-ui text-sm text-[#1A1A1A] hover:underline hover:decoration-[#DCCCFF] hover:decoration-2 underline-offset-2"
       >
-        ← Back to Projects
+        {{ t("batch.backToProjects") }}
       </router-link>
     </div>
 
@@ -274,13 +303,13 @@ watch(
       <p
         class="font-editorial text-xl font-normal leading-[1.3] text-[#1A1A1A]/60"
       >
-        Unable to load batch data.
+        {{ t("batch.networkError") }}
       </p>
       <button
         @click="retryFetch"
         class="inline-block bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-4 py-2 font-ui text-sm uppercase font-semibold tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"
       >
-        Retry
+        {{ t("batch.retry") }}
       </button>
     </div>
 
@@ -291,10 +320,14 @@ watch(
         <h1
           class="font-editorial text-4xl md:text-5xl font-normal leading-[1.1] tracking-tight text-[#1A1A1A]"
         >
-          Batch #{{ batchData.id.slice(0, 3) }} — Revision Feedback
+          {{ t("batch.title", { id: batchData.id.slice(0, 3) }) }}
         </h1>
         <p class="font-body text-base leading-[1.6] text-[#1A1A1A]/60 mt-2">
-          Analyzed {{ formatCreatedDate(batchData.createdAt) }}
+          {{
+            t("batch.analyzedDate", {
+              date: formatCreatedDate(batchData.createdAt),
+            })
+          }}
         </p>
       </div>
 
@@ -309,10 +342,10 @@ watch(
             <p
               class="font-mono text-[11px] uppercase tracking-wider text-[#1A1A1A]/60 mb-3 font-bold border-b-2 border-[#1A1A1A] pb-1 inline-block"
             >
-              AI Summary
+              {{ t("batch.aiSummary") }}
             </p>
             <p class="font-body text-base leading-[1.6] text-[#1A1A1A] mt-2">
-              {{ batchData.summary || "No summary generated for this batch." }}
+              {{ batchData.summary || t("batch.noSummary") }}
             </p>
           </div>
 
@@ -330,7 +363,7 @@ watch(
               <p
                 class="font-mono text-[10px] uppercase tracking-widest text-[#166534] font-bold border-t-2 border-[#1A1A1A] pt-2"
               >
-                IN SCOPE
+                {{ t("batch.inScope") }}
               </p>
             </div>
 
@@ -346,7 +379,7 @@ watch(
               <p
                 class="font-mono text-[10px] uppercase tracking-widest text-[#991B1B] font-bold border-t-2 border-[#1A1A1A] pt-2"
               >
-                OUT OF SCOPE
+                {{ t("batch.outOfScope") }}
               </p>
             </div>
           </div>
@@ -367,20 +400,20 @@ watch(
                 v-if="item.category"
                 class="inline-block bg-[#DCCCFF] text-[#1A1A1A] border-2 border-[#1A1A1A] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider rounded-none font-bold shadow-[2px_2px_0px_0px_#1A1A1A]"
               >
-                [{{ item.category }}]
+                [{{ item.category || t("batch.generalCategory") }}]
               </span>
               <span
                 v-else
                 class="inline-block bg-[#DCCCFF] text-[#1A1A1A] border-2 border-[#1A1A1A] px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider rounded-none font-bold shadow-[2px_2px_0px_0px_#1A1A1A]"
               >
-                [GENERAL]
+                [{{ t("batch.generalCategory") }}]
               </span>
 
               <span
                 :class="getScopeStatusBadgeClass(item.scopeStatus)"
                 class="px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider rounded-none font-bold border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]"
               >
-                [{{ item.scopeStatus.replace(/_/g, " ") }}]
+                [{{ getScopeStatusLabel(item.scopeStatus) }}]
               </span>
             </div>
 
@@ -399,7 +432,8 @@ watch(
               <p class="font-body text-sm text-[#1A1A1A] leading-[1.5]">
                 <span
                   class="font-mono text-xs font-bold uppercase tracking-wider text-[#1A1A1A] mr-1"
-                  >REASON:</span
+                >
+                  {{ t("batch.reasonLabel") }}</span
                 >
                 <span class="italic">{{ item.reason }}</span>
               </p>
@@ -412,10 +446,10 @@ watch(
             class="bg-[#FAFAF9] border-2 border-dashed border-[#1A1A1A]/40 p-12 rounded-none text-center"
           >
             <p class="font-editorial text-xl text-[#1A1A1A]/60">
-              No items extracted
+              {{ t("batch.emptyItems") }}
             </p>
             <p class="font-body text-sm text-[#1A1A1A]/40 mt-2">
-              The AI could not identify structured revisions from this feedback.
+              {{ t("batch.emptyItemsDesc") }}
             </p>
           </div>
         </div>
@@ -431,7 +465,8 @@ watch(
             :class="getBatchStatusBadgeClass(batchData.status)"
             class="font-mono text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-none border-2 border-[#1A1A1A] shadow-[2px_2px_0px_0px_#1A1A1A]"
           >
-            STATUS: {{ batchData.status.replace(/_/g, " ") }}
+            {{ t("batch.statusLabel") }}
+            {{ getBatchStatusLabel(batchData.status) }}
           </span>
         </div>
 
@@ -444,9 +479,11 @@ watch(
             :disabled="isSharing"
             class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 cursor-pointer flex items-center gap-2"
           >
-            <span>⚭</span>
+            <Link2 :size="16" :stroke-width="2" class="shrink-0" />
             <span>{{
-              isSharing ? "GENERATING LINK..." : "GENERATE MAGIC LINK"
+              isSharing
+                ? t("batch.generatingLink")
+                : t("batch.generateMagicLink")
             }}</span>
           </button>
 
@@ -458,9 +495,11 @@ watch(
                 @click="copyLinkDirectly()"
                 class="bg-[#FDFFB6] text-[#1A1A1A] border-2 border-[#1A1A1A] px-5 py-3 font-ui text-sm font-bold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] transition-all cursor-pointer flex items-center gap-2"
               >
-                <span>📋</span>
+                <Copy :size="16" :stroke-width="2" class="shrink-0" />
                 <span>{{
-                  copyState === "copied" ? "LINK COPIED!" : "COPY MAGIC LINK"
+                  copyState === "copied"
+                    ? t("batch.linkCopied")
+                    : t("batch.copyMagicLink")
                 }}</span>
               </button>
 
@@ -468,8 +507,8 @@ watch(
                 @click="openPortalInNewTab"
                 class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-5 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer flex items-center gap-2"
               >
-                <span>↗</span>
-                <span>VIEW PORTAL</span>
+                <ExternalLink :size="16" :stroke-width="2" class="shrink-0" />
+                <span>{{ t("batch.viewPortal") }}</span>
               </button>
             </template>
 
@@ -479,8 +518,12 @@ watch(
               :disabled="isSharing"
               class="bg-[#FDFFB6] text-[#1A1A1A] border-2 border-[#1A1A1A] px-5 py-3 font-ui text-sm font-bold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 cursor-pointer flex items-center gap-2"
             >
-              <span>↻</span>
-              <span>{{ isSharing ? "FETCHING LINK..." : "RE-GENERATE MAGIC LINK" }}</span>
+              <RefreshCw :size="16" :stroke-width="2" class="shrink-0" />
+              <span>{{
+                isSharing
+                  ? t("batch.fetchingLink")
+                  : t("batch.regenerateMagicLink")
+              }}</span>
             </button>
           </template>
         </div>
@@ -498,7 +541,7 @@ watch(
           @click="handleShare"
           class="mt-2 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-ui text-xs uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"
         >
-          Retry
+          {{ t("batch.retry") }}
         </button>
       </div>
     </div>
@@ -516,7 +559,7 @@ watch(
           class="flex items-center justify-between border-b-2 border-[#1A1A1A] pb-3 mb-4"
         >
           <h2 class="font-editorial text-2xl font-normal text-[#1A1A1A]">
-            Magic Link Generated
+            {{ t("batch.magicLinkGenerated") }}
           </h2>
           <button
             @click="closeModal"
@@ -527,8 +570,7 @@ watch(
         </div>
 
         <p class="font-body text-sm text-[#1A1A1A]/80 leading-[1.6] mb-4">
-          Share this link with your client. They can review and confirm the
-          scope without needing to log in.
+          {{ t("batch.shareLinkDesc") }}
         </p>
 
         <div class="flex items-center gap-2 mb-6">
@@ -542,7 +584,7 @@ watch(
             @click="copyLinkDirectly(effectivePortalUrl)"
             class="bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-ui text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all duration-100 shrink-0 cursor-pointer"
           >
-            {{ copyState === "copied" ? "COPIED!" : "COPY" }}
+            {{ copyState === "copied" ? t("batch.copied") : t("batch.copy") }}
           </button>
         </div>
 
@@ -551,7 +593,7 @@ watch(
             @click="closeModal"
             class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-2.5 font-ui text-xs font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] transition-all duration-100 cursor-pointer"
           >
-            DONE
+            {{ t("batch.done") }}
           </button>
         </div>
       </div>

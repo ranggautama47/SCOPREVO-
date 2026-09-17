@@ -2,6 +2,9 @@
 import { ref, computed } from "vue";
 import { apiClient, ApiError } from "../../api/client";
 import type { Project } from "../../types/api";
+import { useI18n } from "../../composables/useI18n";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   project: Project;
@@ -67,25 +70,25 @@ async function confirmCompleteProject() {
       errorCode.value = err.code;
       switch (err.code) {
         case "PROJECT_HAS_PENDING_BATCH":
-          errorMsg.value = "Cannot complete project while a revision batch is awaiting client confirmation. Please resolve or confirm the pending batch first.";
+           errorMsg.value = t("modals.errPendingBatch");
           break;
         case "INVALID_STATUS_TRANSITION":
           errorMsg.value = err.message;
           break;
         case "PROJECT_COMPLETED":
-          errorMsg.value = "This project is completed. Reopen the project before creating or sharing revision batches.";
+           errorMsg.value = t("modals.errCompleted");
           break;
-        default:
-          errorMsg.value = err.message;
-      }
-    } else {
-      errorMsg.value = "An unexpected error occurred.";
-    }
-  } finally {
-    isUpdating.value = false;
-    showCompleteConfirm.value = false;
-  }
-}
+         default:
+           errorMsg.value = err.message;
+       }
+     } else {
+       errorMsg.value = t("modals.errUnexpected");
+     }
+   } finally {
+     isUpdating.value = false;
+     showCompleteConfirm.value = false;
+   }
+ }
 
 async function handleReopenProject() {
   isUpdating.value = true;
@@ -103,16 +106,16 @@ async function handleReopenProject() {
         case "INVALID_STATUS_TRANSITION":
           errorMsg.value = err.message;
           break;
-        default:
-          errorMsg.value = err.message;
-      }
-    } else {
-      errorMsg.value = "An unexpected error occurred.";
-    }
-  } finally {
-    isUpdating.value = false;
-  }
-}
+         default:
+           errorMsg.value = err.message;
+       }
+     } else {
+       errorMsg.value = t("modals.errUnexpected");
+     }
+   } finally {
+     isUpdating.value = false;
+   }
+ }
 
 function requestDelete() {
   if (isBusy.value) return;
@@ -132,14 +135,14 @@ async function confirmDelete() {
     await apiClient.projects.remove(props.project.id);
     emit("project-deleted");
   } catch (err: unknown) {
-    if (err instanceof ApiError) {
-      errorCode.value = err.code;
-      errorMsg.value = err.message;
-    } else {
-      errorMsg.value = "An unexpected error occurred.";
-    }
-  } finally {
-    isDeleting.value = false;
+     if (err instanceof ApiError) {
+       errorCode.value = err.code;
+       errorMsg.value = err.message;
+     } else {
+       errorMsg.value = t("modals.errUnexpected");
+     }
+   } finally {
+     isDeleting.value = false;
   }
 }
 </script>
@@ -151,17 +154,17 @@ async function confirmDelete() {
       <div class="flex items-start justify-between border-b-2 border-[#1A1A1A] px-6 py-4">
         <div>
           <p class="font-['JetBrains_Mono',monospace] text-[10px] uppercase tracking-widest text-[#006D77] font-bold mb-1">
-            PROJECT CONTEXT
+             {{ t("modals.projectContext") }}
           </p>
           <h2 class="font-['Baskervville',serif] text-2xl font-normal leading-[1.2] text-[#1A1A1A]">
-            Manage Project Settings
+             {{ t("modals.manageTitle") }}
           </h2>
           <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]/60 mt-1">
             {{ project.name }} — {{ project.clientName }}
           </p>
         </div>
         <button type="button" @click="handleClose" :disabled="isBusy" class="font-['JetBrains_Mono',monospace] text-xs uppercase font-bold text-[#1A1A1A] border-2 border-[#1A1A1A] bg-[#FAFAF9] px-3 py-1 rounded-none cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#FDFFB6] transition-colors">
-          × CLOSE
+           × {{ t("modals.close") }}
         </button>
       </div>
 
@@ -180,10 +183,10 @@ async function confirmDelete() {
         <!-- Current Status Display -->
         <div class="mb-6">
           <p class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#1A1A1A]/70 font-bold mb-2">
-            CURRENT STATUS
+             {{ t("modals.currentStatus") }}
           </p>
           <span :class="[getStatusBadgeClass(), 'px-2 py-0.5 font-[\'JetBrains_Mono\',monospace] text-[10px] uppercase tracking-wide rounded-none font-bold']">
-            [ STATUS: {{ getStatusLabel() }} ]
+               [ {{ t("modals.statusLabel") }}: {{ getStatusLabel() }} ]
           </span>
         </div>
 
@@ -198,14 +201,14 @@ async function confirmDelete() {
                 :disabled="isBusy"
                 class="w-full bg-[#FDFFB6] text-[#1A1A1A] border-2 border-[#1A1A1A] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
-                {{ isUpdating ? "COMPLETING..." : "MARK AS COMPLETED" }}
+                 {{ isUpdating ? t("modals.completing") : t("modals.markAsCompleted") }}
               </button>
             </div>
 
             <!-- Konfirmasi Complete Kustom (Ganti window.confirm) -->
             <div v-else class="space-y-3 bg-[#FDFFB6]/20 border-2 border-[#1A1A1A] p-4 rounded-none">
               <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A] leading-[1.5]">
-                MARK PROJECT AS COMPLETED? This closes the project. New revision batches cannot be submitted until reopened.
+                 {{ t("modals.completeConfirm") }}
               </p>
               <div class="flex gap-2">
                 <button
@@ -214,37 +217,37 @@ async function confirmDelete() {
                   :disabled="isUpdating"
                   class="flex-1 bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-4 py-2 font-['Inter',sans-serif] text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
-                  {{ isUpdating ? "COMPLETING..." : "YES, COMPLETE" }}
+                   {{ isUpdating ? t("modals.completing") : t("modals.yesComplete") }}
                 </button>
                 <button
                   type="button"
                   @click="cancelComplete"
                   :disabled="isUpdating"
                   class="flex-1 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-['Inter',sans-serif] text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                >
-                  CANCEL
-                </button>
+                   >
+                     {{ t("modals.cancel") }}
+                   </button>
               </div>
-            </div>
+             </div>
 
-            <!-- Danger Zone -->
-            <div class="border-t-2 border-[#1A1A1A] pt-4 mt-4">
-              <p class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#E63946] font-bold mb-3">
-                DANGER ZONE
-              </p>
-              <button
-                type="button"
-                v-if="!showDeleteConfirm"
-                @click="requestDelete"
-                :disabled="isBusy"
-                class="w-full bg-[#FAFAF9] text-[#E63946] border-2 border-[#E63946] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#E63946] rounded-none transition-all duration-100 ease-out hover:bg-[#FEE2E2] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#E63946] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#E63946] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+             <!-- Danger Zone -->
+             <div class="border-t-2 border-[#1A1A1A] pt-4 mt-4">
+               <p class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#E63946] font-bold mb-3">
+                 {{ t("modals.dangerZone") }}
+               </p>
+               <button
+                 type="button"
+                 v-if="!showDeleteConfirm"
+                 @click="requestDelete"
+                 :disabled="isBusy"
+                 class="w-full bg-[#FAFAF9] text-[#E63946] border-2 border-[#E63946] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#E63946] rounded-none transition-all duration-100 ease-out hover:bg-[#FEE2E2] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#E63946] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#E63946] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
-                DELETE PROJECT
+                {{ t("modals.deleteProject") }}
               </button>
 
               <div v-else class="space-y-2 bg-[#FEE2E2]/30 border-2 border-[#E63946] p-4 rounded-none">
                 <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A] leading-[1.5]">
-                  DELETE PROJECT PERMANENTLY? This will permanently delete this project, {{ revisionBatchCount }} revision batch{{ revisionBatchCount !== 1 ? 'es' : '' }}, and attached documents. This action CANNOT be undone.
+                  {{ t("modals.deleteConfirmPlural", { count: revisionBatchCount }) }}
                 </p>
                 <div class="flex gap-2">
                   <button
@@ -253,16 +256,16 @@ async function confirmDelete() {
                     :disabled="isDeleting"
                     class="flex-1 bg-[#E63946] text-[#FAFAF9] border-2 border-[#1A1A1A] px-4 py-2 font-['Inter',sans-serif] text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
-                    {{ isDeleting ? "DELETING..." : "YES, DELETE" }}
+                   {{ isDeleting ? t("modals.deleting") : t("modals.yesDelete") }}
                   </button>
-                  <button
-                    type="button"
-                    @click="cancelDelete"
-                    :disabled="isDeleting"
-                    class="flex-1 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-['Inter',sans-serif] text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    CANCEL
-                  </button>
+                   <button
+                     type="button"
+                     @click="cancelDelete"
+                     :disabled="isDeleting"
+                     class="flex-1 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-['Inter',sans-serif] text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                   >
+                     {{ t("modals.cancel") }}
+                   </button>
                 </div>
               </div>
             </div>
@@ -276,27 +279,27 @@ async function confirmDelete() {
               :disabled="isBusy"
               class="w-full bg-[#FDFFB6] text-[#1A1A1A] border-2 border-[#1A1A1A] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              {{ isUpdating ? "REOPENING..." : "REOPEN PROJECT" }}
+               {{ isUpdating ? t("modals.reopening") : t("modals.reopenProject") }}
             </button>
 
-            <!-- Danger Zone -->
-            <div class="border-t-2 border-[#1A1A1A] pt-4 mt-4">
-              <p class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#E63946] font-bold mb-3">
-                DANGER ZONE
-              </p>
-              <button
-                type="button"
-                v-if="!showDeleteConfirm"
-                @click="requestDelete"
-                :disabled="isBusy"
-                class="w-full bg-[#FAFAF9] text-[#E63946] border-2 border-[#E63946] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#E63946] rounded-none transition-all duration-100 ease-out hover:bg-[#FEE2E2] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#E63946] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-              >
-                DELETE PROJECT
-              </button>
+             <!-- Danger Zone -->
+             <div class="border-t-2 border-[#1A1A1A] pt-4 mt-4">
+               <p class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#E63946] font-bold mb-3">
+                 {{ t("modals.dangerZone") }}
+               </p>
+               <button
+                 type="button"
+                 v-if="!showDeleteConfirm"
+                 @click="requestDelete"
+                 :disabled="isBusy"
+                 class="w-full bg-[#FAFAF9] text-[#E63946] border-2 border-[#E63946] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#E63946] rounded-none transition-all duration-100 ease-out hover:bg-[#FEE2E2] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#E63946] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+               >
+                 {{ t("modals.deleteProject") }}
+               </button>
 
               <div v-else class="space-y-2 bg-[#FEE2E2]/30 border-2 border-[#E63946] p-4 rounded-none">
                 <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A] leading-[1.5]">
-                  DELETE PROJECT PERMANENTLY? This will permanently delete this project, {{ revisionBatchCount }} revision batch{{ revisionBatchCount !== 1 ? 'es' : '' }}, and attached documents. This action CANNOT be undone.
+                  {{ t("modals.deleteConfirmPlural", { count: revisionBatchCount }) }}
                 </p>
                 <div class="flex gap-2">
                   <button
@@ -305,7 +308,7 @@ async function confirmDelete() {
                     :disabled="isDeleting"
                     class="flex-1 bg-[#E63946] text-[#FAFAF9] border-2 border-[#1A1A1A] px-4 py-2 font-['Inter',sans-serif] text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
-                    {{ isDeleting ? "DELETING..." : "YES, DELETE" }}
+                   {{ isDeleting ? t("modals.deleting") : t("modals.yesDelete") }}
                   </button>
                   <button
                     type="button"
@@ -313,7 +316,7 @@ async function confirmDelete() {
                     :disabled="isDeleting"
                     class="flex-1 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-['Inter',sans-serif] text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
-                    CANCEL
+                    {{ t("modals.cancel") }}
                   </button>
                 </div>
               </div>

@@ -5,6 +5,9 @@ import { apiClient } from "../../api/client";
 import type { Project } from "../../types/api";
 import { useAuthStore } from "../../stores/auth";
 import { swrService } from "../../services/resilience/swr.service";
+import { useI18n } from "../../composables/useI18n";
+
+const { t } = useI18n();
 import {
   FolderKanban,
   History,
@@ -98,8 +101,8 @@ async function fetchProjects() {
   }
   try {
     projects.value = await swrService.fetchProjects(accountId);
-  } catch (err: any) {
-    error.value = err.message || "Failed to load projects";
+  } catch (err: unknown) {
+    error.value = err instanceof Error ? err.message : t("projects.failedList");
   } finally {
     isLoading.value = false;
   }
@@ -136,8 +139,8 @@ async function handleCreateProject() {
     });
     closeModal();
     await fetchProjects();
-  } catch (err: any) {
-    error.value = err.message || "Failed to create project";
+  } catch (err: unknown) {
+    error.value = err instanceof Error ? err.message : t("projects.failedList");
   } finally {
     isSubmitting.value = false;
   }
@@ -175,13 +178,13 @@ onMounted(() => {
           to="/dashboard"
           class="font-mono text-xs font-bold uppercase tracking-wider text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:underline decoration-[#DCCCFF] decoration-2 underline-offset-4 transition-all"
         >
-          WORKSPACE
+          {{ t("projects.breadcrumbWorkspace") }}
         </router-link>
         <span class="font-mono text-xs text-[#1A1A1A]/30">/</span>
         <span
           class="font-mono text-xs font-bold uppercase tracking-wider text-[#1A1A1A]"
         >
-          PROJECTS
+          {{ t("projects.breadcrumbProjects") }}
         </span>
       </nav>
       <AppTopbar />
@@ -195,19 +198,19 @@ onMounted(() => {
         <h1
           class="font-['Baskervville',serif] text-5xl font-normal leading-[1.1] tracking-tight text-[#1A1A1A]"
         >
-          Projects
+          {{ t("projects.title") }}
         </h1>
         <p
           class="font-['Noto_Serif',serif] text-base leading-[1.6] text-[#1A1A1A]/60 mt-2"
         >
-          Manage your project workspace and monitor revision quota boundaries
+          {{ t("projects.subtitle") }}
         </p>
       </div>
       <button
         @click="openModal"
         class="shrink-0 ml-6 bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"
       >
-        + NEW PROJECT
+        + {{ t("projects.newProject") }}
       </button>
     </div>
 
@@ -217,7 +220,7 @@ onMounted(() => {
       class="flex items-center gap-2 font-['JetBrains_Mono',monospace] text-sm text-[#1A1A1A]/60 mb-8"
     >
       <span class="animate-pulse">■</span>
-      <span>Loading projects...</span>
+      <span>{{ t("projects.loading") }}</span>
     </div>
 
     <!-- ── ERROR ────────────────────────────────────────────── -->
@@ -238,7 +241,7 @@ onMounted(() => {
           <p
             class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#1A1A1A]/70"
           >
-            TOTAL ACTIVE PROJECTS
+            {{ t("projects.statActiveProjects") }}
           </p>
           <FolderKanban class="w-7 h-7 text-[#1A1A1A]" :stroke-width="2" />
         </div>
@@ -258,7 +261,7 @@ onMounted(() => {
             <p
               class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#1A1A1A]/70"
             >
-              TOTAL REVISIONS USED
+              {{ t("projects.statRevisionsUsed") }}
             </p>
             <History class="w-7 h-7 text-[#1A1A1A]" :stroke-width="2" />
           </div>
@@ -281,7 +284,12 @@ onMounted(() => {
           <p
             class="font-['JetBrains_Mono',monospace] text-[11px] text-[#1A1A1A]/70 mt-1"
           >
-            {{ totalUsedRevisions }} of {{ totalAllowedRevisions }} revisions
+            {{
+              t("projects.quotaSummary", {
+                used: totalUsedRevisions,
+                allowed: totalAllowedRevisions,
+              })
+            }}
           </p>
         </div>
       </div>
@@ -294,7 +302,7 @@ onMounted(() => {
           <p
             class="font-['JetBrains_Mono',monospace] text-xs uppercase tracking-widest text-[#1A1A1A]/70"
           >
-            REVISIONS REMAINING
+            {{ t("projects.statRevisionsRemaining") }}
           </p>
           <ClipboardList class="w-7 h-7 text-[#1A1A1A]" :stroke-width="2" />
         </div>
@@ -315,7 +323,7 @@ onMounted(() => {
         <h2
           class="font-['Baskervville',serif] text-2xl font-normal text-[#1A1A1A]"
         >
-          Current Workspace
+          {{ t("projects.currentWorkspace") }}
         </h2>
 
         <div
@@ -326,7 +334,7 @@ onMounted(() => {
             <input
               v-model="searchQuery"
               type="text"
-              placeholder="Search project or client..."
+              :placeholder="t('projects.searchPlaceholder')"
               class="bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-3 py-1.5 pl-8 text-xs font-['Noto_Serif',serif] rounded-none outline-none focus:bg-[#FDFFB6] w-48 transition-all"
             />
             <Search
@@ -340,7 +348,9 @@ onMounted(() => {
             class="flex items-center gap-1.5 border-2 border-[#1A1A1A] px-3 py-1.5 bg-[#FAFAF9] hover:bg-[#FDFFB6] transition-colors cursor-pointer"
           >
             <ArrowUpDown class="w-3.5 h-3.5" />
-            <span>SORT: {{ sortBy.toUpperCase() }}</span>
+            <span>
+              {{ t("projects.sortLabel") }} {{ sortBy.toUpperCase() }}</span
+            >
           </button>
         </div>
       </div>
@@ -368,7 +378,7 @@ onMounted(() => {
               <p
                 class="font-['JetBrains_Mono',monospace] text-[10px] uppercase tracking-widest text-[#1A1A1A]/50 font-bold"
               >
-                PROJECT
+                {{ t("projects.projectLabel") }}
               </p>
               <ArrowUpRight class="w-4 h-4 text-[#1A1A1A]/60" />
             </div>
@@ -397,13 +407,17 @@ onMounted(() => {
                     : 'bg-[#DCFCE7] text-[#166534]',
                 ]"
               >
-                {{ project.status }}
+                {{
+                  project.status === "COMPLETED"
+                    ? t("projects.statusCompleted")
+                    : t("projects.statusActive")
+                }}
               </span>
               <!-- Document Indicator (hanya muncul jika ada dokumen) -->
               <span
                 class="inline-flex items-center gap-1.5 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-2 py-0.5 font-['JetBrains_Mono',monospace] text-[10px] font-bold rounded-none"
                 :class="(project.documentCount ?? 0) === 0 ? 'opacity-40' : ''"
-                title="Attached Documents"
+                :title="t('projects.attachedDocumentsTitle')"
               >
                 <FileText class="w-3.5 h-3.5" />
                 {{ project.documentCount ?? 0 }}
@@ -417,7 +431,7 @@ onMounted(() => {
               <p
                 class="font-['JetBrains_Mono',monospace] text-[10px] uppercase tracking-widest text-[#1A1A1A]/60 font-bold"
               >
-                REVISION QUOTA
+                {{ t("projects.revisionQuota") }}
               </p>
               <span
                 class="font-['JetBrains_Mono',monospace] text-xs font-semibold text-[#1A1A1A]/80"
@@ -441,12 +455,20 @@ onMounted(() => {
               <span
                 class="font-['JetBrains_Mono',monospace] text-xs text-[#1A1A1A]/60"
               >
-                {{ project.remainingRevisions }} remaining
+                {{
+                  t("projects.remainingSuffix", {
+                    count: project.remainingRevisions,
+                  })
+                }}
               </span>
               <span
                 class="font-['JetBrains_Mono',monospace] text-xs text-[#1A1A1A]/60"
               >
-                {{ Math.round(getProgressPercent(project)) }}% used
+                {{
+                  t("projects.percentUsed", {
+                    percent: Math.round(getProgressPercent(project)),
+                  })
+                }}
               </span>
             </div>
           </div>
@@ -459,13 +481,13 @@ onMounted(() => {
         class="p-12 text-center border-2 border-dashed border-[#1A1A1A]/30"
       >
         <p class="font-['Baskervville',serif] text-lg text-[#1A1A1A]/60">
-          No projects match your filter query.
+          {{ t("projects.filterEmpty") }}
         </p>
         <button
           @click="searchQuery = ''"
           class="mt-2 text-xs font-['JetBrains_Mono',monospace] underline cursor-pointer"
         >
-          Clear filter
+          {{ t("projects.clearFilter") }}
         </button>
       </div>
     </div>
@@ -482,16 +504,16 @@ onMounted(() => {
         draggable="false"
       />
       <p class="font-['Baskervville',serif] text-xl text-[#1A1A1A]/60">
-        No projects yet
+        {{ t("projects.emptyTitle") }}
       </p>
       <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]/40 mt-2">
-        Create your first project to get started
+        {{ t("projects.emptyBody") }}
       </p>
       <button
         @click="openModal"
         class="mt-6 bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"
       >
-        + NEW PROJECT
+        + {{ t("projects.newProject") }}
       </button>
     </div>
 
@@ -507,7 +529,7 @@ onMounted(() => {
         <h2
           class="font-['Baskervville',serif] text-2xl font-normal leading-[1.3] text-[#1A1A1A] mb-6"
         >
-          Create New Project
+          {{ t("modals.createTitle") }}
         </h2>
 
         <form @submit.prevent="handleCreateProject" class="flex flex-col gap-4">
@@ -516,7 +538,7 @@ onMounted(() => {
               for="name"
               class="block font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide mb-1"
             >
-              Project Name
+              {{ t("modals.nameLabel") }}
             </label>
             <input
               id="name"
@@ -524,7 +546,7 @@ onMounted(() => {
               type="text"
               required
               class="bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-3 font-['Noto_Serif',serif] text-base rounded-none w-full outline-none focus:bg-[#FDFFB6] focus:outline-none placeholder:text-[#1A1A1A]/40"
-              placeholder="Enter project name..."
+              :placeholder="t('modals.namePlaceholder')"
             />
           </div>
 
@@ -533,7 +555,7 @@ onMounted(() => {
               for="clientName"
               class="block font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide mb-1"
             >
-              Client Name
+              {{ t("projects.clientNameLabel") }}
             </label>
             <input
               id="clientName"
@@ -541,7 +563,7 @@ onMounted(() => {
               type="text"
               required
               class="bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-3 font-['Noto_Serif',serif] text-base rounded-none w-full outline-none focus:bg-[#FDFFB6] focus:outline-none placeholder:text-[#1A1A1A]/40"
-              placeholder="Enter client name..."
+              :placeholder="t('projects.clientNamePlaceholder')"
             />
           </div>
 
@@ -550,7 +572,7 @@ onMounted(() => {
               for="totalAllowedRevisions"
               class="block font-['JetBrains_Mono',monospace] text-xs uppercase tracking-wide mb-1"
             >
-              Total Allowed Revisions
+              {{ t("projects.totalRevisionsLabel") }}
             </label>
             <input
               id="totalAllowedRevisions"
@@ -577,14 +599,16 @@ onMounted(() => {
               @click="closeModal"
               class="flex-1 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"
             >
-              CANCEL
+              {{ t("modals.cancel") }}
             </button>
             <button
               type="submit"
               :disabled="isSubmitting"
               class="flex-1 bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
             >
-              {{ isSubmitting ? "CREATING..." : "CREATE PROJECT" }}
+              {{
+                isSubmitting ? t("modals.creating") : t("modals.submitCreate")
+              }}
             </button>
           </div>
         </form>
