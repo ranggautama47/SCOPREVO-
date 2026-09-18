@@ -249,6 +249,11 @@ export default {
       account: "ACCOUNT",
       logout: "LOGOUT",
       user: "User",
+      totalBatches: "{count} TOTAL",
+      itemCount: "{count} item",
+      itemCountPlural: "{count} items",
+      noActivity: "No recent activity yet.",
+      viewActivityHistory: "VIEW ACTIVITY HISTORY",
     },
     sidebar: {
       dashboard: "DASHBOARD",

@@ -255,6 +255,11 @@ export default {
       account: "AKUN",
       logout: "KELUAR",
       user: "Pengguna",
+      totalBatches: "{count} TOTAL",
+      itemCount: "{count} item",
+      itemCountPlural: "{count} item",
+      noActivity: "Belum ada aktivitas.",
+      viewActivityHistory: "LIHAT RIWAYAT AKTIVITAS",
     },
     sidebar: {
       dashboard: "DASHBOARD",
