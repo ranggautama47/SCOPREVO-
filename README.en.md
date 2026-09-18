@@ -6,7 +6,7 @@
 
 **AI-powered Scope & Revision Intelligence.**
 
-**🌐 Language / Bahasa:** **🇮🇩 Indonesia** · [🇬🇧 English](./README.en.md)
+**🌐 Language:** [🇮🇩 Indonesia](./README.md) · **🇬🇧 English**
 
 [![Vue 3](https://img.shields.io/badge/Vue-3.x-42b883?style=for-the-badge&logo=vue.js&logoColor=white)](https://vuejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -25,9 +25,9 @@
 
 ---
 
-> **Note on naming/brand:** product was previously named ScopeGuard; SCOPREVO (Scope + Revision) is the current name going forward. Visual identity (logo, color system, brand symbol) is intentionally **not locked in this document** — that ownership sits with the UI/UX Lead per the multi-AI role split (this doc, as Product/System Architect output, covers scope, data model, AI contract, and roadmap only).
+> **Note on naming/brand:** the product was previously named ScopeGuard; SCOPREVO (Scope + Revision) is the current name going forward. Visual identity (logo, color system, brand symbol) is intentionally **not locked in this document** — that ownership sits with the UI/UX Lead per the multi-AI role split (this doc, as Product/System Architect output, covers scope, data model, AI contract, and roadmap only).
 
-SCOPREVO mengubah feedback klien yang berantakan (chat WhatsApp, email) menjadi checklist revisi yang terstruktur, sekaligus secara otomatis mendeteksi permintaan mana yang masih termasuk scope proyek dan mana yang berpotensi menjadi pekerjaan tambahan (out of scope).
+SCOPREVO transforms messy client feedback (WhatsApp chats, emails) into a structured revision checklist, and automatically detects which requests fall within the project scope and which may become additional work (out of scope).
 
 ---
 
@@ -47,14 +47,15 @@ SCOPREVO mengubah feedback klien yang berantakan (chat WhatsApp, email) menjadi 
 
 ## 🎯 Problem
 
-Freelancer dan agency kecil di Indonesia kehilangan waktu dan uang karena:
-1. Feedback klien tersebar dan tidak terstruktur (WhatsApp, email, campur aduk dengan basa-basi).
-2. Tidak ada batas jelas antara "revisi yang disepakati" dan "request baru yang harusnya kena biaya tambahan" → scope creep.
-3. Klien enggan pakai tools project management berat (Jira/Trello/Asana) yang butuh onboarding.
+Freelancers and small agencies in Indonesia lose time and money because:
+
+1. Client feedback is scattered and unstructured (WhatsApp, email, mixed with small talk).
+2. There is no clear boundary between "agreed revisions" and "new requests that should incur additional cost" → scope creep.
+3. Clients are reluctant to use heavy project management tools (Jira/Trello/Asana) that require onboarding.
 
 ## 💡 Solution
 
-Satu alur inti, bukan aplikasi serba bisa:
+One core flow, not a Swiss-army-knife app:
 Client sends messy feedback (text)
 ↓
 AI extracts & classifies
@@ -71,16 +72,16 @@ Client confirms — no login needed
 
 ## 🧭 Why this, not a generic PM tool
 
-Moxie, Plutio, dan Odoo adalah platform all-in-one (invoicing, CRM, scheduling, contracts, dll). Keberadaan mereka justru memvalidasi bahwa freelancer butuh business tooling — tapi tak satupun fokus mendalam pada satu masalah spesifik: **mengekstrak dan mengklasifikasi revisi dari feedback berantakan, lalu melindungi scope proyek secara real-time.** SCOPREVO sengaja sempit: satu workflow, dikerjakan tuntas.
+Moxie, Plutio, and Odoo are all-in-one platforms (invoicing, CRM, scheduling, contracts, etc.). Their existence validates that freelancers need business tooling — but none of them focus deeply on one specific problem: **extracting and classifying revisions from messy feedback, then protecting project scope in real time.** SCOPREVO is intentionally narrow: one workflow, done thoroughly.
 
 ## ✨ Core value in one line
 
-> "AI mengubah feedback klien yang tidak terstruktur menjadi checklist revisi yang bisa ditindaklanjuti, dan melindungi freelancer dari scope creep."
+> "AI transforms unstructured client feedback into actionable revision checklists, and protects freelancers from scope creep."
 
 ## ✅ MVP Scope (in)
 
-- Input: paste teks mentah (WhatsApp/email copy-paste)
-- AI extraction → structured JSON (item, kategori, klasifikasi scope, alasan)
+- Input: paste raw text (WhatsApp/email copy-paste)
+- AI extraction → structured JSON (item, category, scope classification, reason)
 - Revision quota tracking per project
 - Magic link client portal (no login)
 - Client sign-off / confirm
@@ -133,7 +134,8 @@ SCOPREVO is being built for **DevHandal 2026 Batch 2 (Codepolitan x Tencent Edge
 
 | Document | Description |
 |---|---|
-| 📘 [`README.md`](./README.md) | This file — project overview |
+| 📘 [`README.md`](./README.md) | Indonesian version — project overview |
+| 📘 [`README.en.md`](./README.en.md) | This file — English version |
 | 🗺️ [`PHASES.md`](./PHASES.md) | Build roadmap, day by day |
 | 🗄️ [`DATABASE.md`](./DATABASE.md) | Relational data model (ERD + schema) |
 | 📐 [`UML.md`](./UML.md) | Use case, sequence, and state diagrams |
