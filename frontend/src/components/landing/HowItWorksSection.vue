@@ -10,13 +10,13 @@
         >
           {{ t('landing.how.eyebrow') }}
         </span>
-        <h2 class="font-['Baskervville',serif] text-3xl md:text-4xl lg:text-5xl leading-[1.15] text-[#1A1A1A] max-w-2xl">
+        <h2 class="font-['Baskervville',serif] text-2xl md:text-3xl lg:text-4xl leading-[1.15] text-[#1A1A1A] max-w-2xl">
           {{ t('landing.how.headline') }}
         </h2>
       </div>
 
       <!-- Steps Grid: 2x2 on desktop -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 lg:gap-10">
 
         <!-- Step 01 -->
         <div class="flex flex-col gap-4">
@@ -28,7 +28,7 @@
             >
               01
             </span>
-            <h3 class="font-['Baskervville',serif] text-xl font-bold text-[#1A1A1A]">{{ t('landing.how.step1.title') }}</h3>
+            <h3 class="font-['Baskervville',serif] text-base md:text-xl lg:text-xl font-bold text-[#1A1A1A]">{{ t('landing.how.step1.title') }}</h3>
           </div>
           <p class="font-['Noto_Serif',serif] text-sm leading-[1.7] text-[#1A1A1A]/70">{{ t('landing.how.step1.description') }}</p>
           <FeedbackInputMockup />
@@ -44,7 +44,7 @@
             >
               02
             </span>
-            <h3 class="font-['Baskervville',serif] text-xl font-bold text-[#1A1A1A]">{{ t('landing.how.step2.title') }}</h3>
+            <h3 class="font-['Baskervville',serif] text-base md:text-xl lg:text-xl font-bold text-[#1A1A1A]">{{ t('landing.how.step2.title') }}</h3>
           </div>
           <p class="font-['Noto_Serif',serif] text-sm leading-[1.7] text-[#1A1A1A]/70">{{ t('landing.how.step2.description') }}</p>
           <AiAnalysisMockup />
@@ -60,7 +60,7 @@
             >
               03
             </span>
-            <h3 class="font-['Baskervville',serif] text-xl font-bold text-[#1A1A1A]">{{ t('landing.how.step3.title') }}</h3>
+            <h3 class="font-['Baskervville',serif] text-base md:text-xl lg:text-xl font-bold text-[#1A1A1A]">{{ t('landing.how.step3.title') }}</h3>
           </div>
           <p class="font-['Noto_Serif',serif] text-sm leading-[1.7] text-[#1A1A1A]/70">{{ t('landing.how.step3.description') }}</p>
           <RevisionChecklistMockup />
@@ -76,7 +76,7 @@
             >
               04
             </span>
-            <h3 class="font-['Baskervville',serif] text-xl font-bold text-[#1A1A1A]">{{ t('landing.how.step4.title') }}</h3>
+            <h3 class="font-['Baskervville',serif] text-base md:text-xl lg:text-xl font-bold text-[#1A1A1A]">{{ t('landing.how.step4.title') }}</h3>
           </div>
           <p class="font-['Noto_Serif',serif] text-sm leading-[1.7] text-[#1A1A1A]/70">{{ t('landing.how.step4.description') }}</p>
           <ClientConfirmationMockup />

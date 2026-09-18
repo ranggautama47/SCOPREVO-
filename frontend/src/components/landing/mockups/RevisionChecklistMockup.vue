@@ -2,7 +2,7 @@
   <!-- Step 03: Revision Checklist -->
   <div class="bg-[#FAFAF9] border-2 border-[#1A1A1A] rounded-none p-4 shadow-[4px_4px_0px_0px_#1A1A1A]">
     <p class="font-['Inter',sans-serif] text-[10px] uppercase tracking-wider text-[#1A1A1A]/50 mb-3">{{ t('landing.mockup.revisionChecklist') }}</p>
-    <div class="space-y-2">
+    <div class="space-y-1.5 md:space-y-2">
       <!-- IN_SCOPE item -->
       <div class="flex items-start gap-3 p-2.5 border border-[#1A1A1A]/15 bg-[#FAFAF9]">
         <CheckCircle :size="16" :stroke-width="2" class="text-[#166534] mt-0.5 flex-shrink-0" aria-hidden="true" />

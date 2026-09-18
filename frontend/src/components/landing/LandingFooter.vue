@@ -19,7 +19,7 @@
       </nav>
 
       <!-- Right: Copyright -->
-      <p class="font-['Inter',sans-serif] text-xs text-[#1A1A1A]/40 text-center md:text-right">
+      <p class="font-['Inter',sans-serif] text-[11px] md:text-xs text-[#1A1A1A]/40 text-center md:text-right">
         {{ t('landing.footer.copyright', { year: currentYear }) }}
       </p>
     </div>

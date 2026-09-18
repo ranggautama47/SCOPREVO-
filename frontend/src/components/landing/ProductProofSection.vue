@@ -4,7 +4,7 @@
     <div class="w-full grid grid-cols-1 lg:grid-cols-2">
 
       <!-- SISI KIRI: Revision Quota Tracking (Sage Background Full Width) -->
-      <div class="bg-[#E6E7D5] w-full border-b-2 lg:border-b-0 lg:border-r-2 border-[#1A1A1A] py-16 md:py-20 px-6 md:px-12 flex justify-end">
+      <div class="bg-[#E6E7D5] w-full border-b-2 lg:border-b-0 lg:border-r-2 border-[#1A1A1A] py-16 md:py-20 px-4 md:px-6 lg:px-12 flex justify-end">
         <!-- Container Dalam untuk Menjaga Batas Teks Konten -->
         <div class="w-full max-w-[560px] flex flex-col justify-between">
           <div>
@@ -15,7 +15,7 @@
             >
               {{ t('landing.proof.quotaEyebrow') }}
             </span>
-            <h2 class="font-['Baskervville',serif] text-3xl md:text-4xl leading-[1.15] text-[#1A1A1A] mb-4">
+            <h2 class="font-['Baskervville',serif] text-2xl md:text-3xl lg:text-4xl leading-[1.15] text-[#1A1A1A] mb-4">
               {{ t('landing.proof.quotaHeadline') }}
             </h2>
             <p class="font-['Noto_Serif',serif] text-sm md:text-base leading-[1.65] text-[#1A1A1A]/80 mb-8">
@@ -27,7 +27,7 @@
       </div>
 
       <!-- SISI KANAN: Why SCOPREVO (Cream Yellow Background Full Width) -->
-      <div class="bg-[#FEFEE8] w-full py-16 md:py-20 px-6 md:px-12 flex justify-start">
+      <div class="bg-[#FEFEE8] w-full py-16 md:py-20 px-4 md:px-6 lg:px-12 flex justify-start">
         <!-- Container Dalam untuk Menjaga Batas Teks Konten -->
         <div class="w-full max-w-[560px] flex flex-col justify-between">
           <div>
@@ -38,7 +38,7 @@
             >
               {{ t('landing.proof.whyEyebrow') }}
             </span>
-            <h2 class="font-['Baskervville',serif] text-3xl md:text-4xl leading-[1.15] text-[#1A1A1A] mb-4">
+            <h2 class="font-['Baskervville',serif] text-2xl md:text-3xl lg:text-4xl leading-[1.15] text-[#1A1A1A] mb-4">
               {{ t('landing.proof.whyHeadline') }}
             </h2>
             <p class="font-['Noto_Serif',serif] text-sm md:text-base leading-[1.65] text-[#1A1A1A]/80 mb-6">

@@ -17,7 +17,7 @@
         </span>
 
         <h2
-          class="font-['Baskervville',serif] text-4xl md:text-5xl leading-[1.15] text-[#1A1A1A]"
+          class="font-['Baskervville',serif] text-2xl md:text-3xl lg:text-4xl leading-[1.15] text-[#1A1A1A]"
         >
           {{ t('landing.scope.headline') }}
         </h2>
@@ -27,7 +27,7 @@
       <div class="lg:col-span-7 grid grid-cols-1 md:grid-cols-3 gap-4">
         <!-- 1. IN_SCOPE CARD (Pastel Green) -->
         <div
-          class="bg-[#DCFCE7] border-2 border-[#1A1A1A] rounded-none p-5 flex flex-col justify-between min-h-[220px]"
+          class="bg-[#DCFCE7] border-2 border-[#1A1A1A] rounded-none p-5 flex flex-col justify-between min-h-[160px] md:min-h-[220px]"
         >
           <div>
             <!-- Header Row: Icon Lingkaran Hijau Gelap + Badge Status -->
@@ -55,7 +55,7 @@
 
         <!-- 2. NEEDS_REVIEW CARD (Pastel Yellow) -->
         <div
-          class="bg-[#FDFFB6] border-2 border-[#1A1A1A] rounded-none p-5 flex flex-col justify-between min-h-[220px]"
+          class="bg-[#FDFFB6] border-2 border-[#1A1A1A] rounded-none p-5 flex flex-col justify-between min-h-[160px] md:min-h-[220px]"
         >
           <div>
             <!-- Header Row: Icon Lingkaran Hitam/Kuning Gelap + Badge Status -->
@@ -83,7 +83,7 @@
 
         <!-- 3. OUT_OF_SCOPE CARD (Pastel Red) -->
         <div
-          class="bg-[#FEE2E2] border-2 border-[#1A1A1A] rounded-none p-5 flex flex-col justify-between min-h-[220px]"
+          class="bg-[#FEE2E2] border-2 border-[#1A1A1A] rounded-none p-5 flex flex-col justify-between min-h-[160px] md:min-h-[220px]"
         >
           <div>
             <!-- Header Row: Icon Lingkaran Merah Gelap + Badge Status -->

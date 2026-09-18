@@ -18,7 +18,7 @@
       </div>
 
       <!-- Callout Box (Lavender Pastel Style) -->
-      <div class="bg-[#EBE5FF] border border-[#C7D2FE] rounded-xl p-5 max-w-3xl mx-auto">
+      <div class="bg-[#EBE5FF] border border-[#C7D2FE] rounded-none p-5 max-w-3xl mx-auto">
         <div class="flex items-center gap-4">
           <!-- Icon Code </> tanpa background kotak hitam -->
           <div class="flex-shrink-0 text-[#4338CA]  font-['JetBrains_Mono',monospace] text-xl font-extrabold tracking-tighter">

@@ -1,5 +1,5 @@
 <template>
-  <div class="landing-page bg-[#FAFAF9] min-h-screen">
+  <div class="landing-page bg-[#FAFAF9] min-h-screen overflow-x-hidden">
     <LandingNavbar />
     <main>
       <HeroSection />

@@ -13,14 +13,14 @@
           {{ t('landing.problem.eyebrow') }}
         </span>
 
-        <h2 class="font-['Baskervville',serif] text-4xl md:text-5xl leading-[1.15] text-[#1A1A1A]">
+        <h2 class="font-['Baskervville',serif] text-2xl md:text-3xl lg:text-4xl leading-[1.15] text-[#1A1A1A]">
           {{ t('landing.problem.headline') }}
         </h2>
       </div>
 
       <!-- KOLOM KANAN: Subheadline & Cards Row -->
       <div class="lg:col-span-7 flex flex-col gap-6 lg:mt-2">
-        <p class="font-['Noto_Serif',serif] text-base md:text-lg text-[#1A1A1A] font-medium">
+        <p class="font-['Noto_Serif',serif] text-sm md:text-base text-[#1A1A1A] font-medium">
           {{ t('landing.problem.subheadline') }}
         </p>
 
@@ -42,7 +42,7 @@
               </h3>
             </div>
             <div class="p-4 flex-grow">
-              <p class="font-['Noto_Serif',serif] text-sm leading-[1.6] text-[#1A1A1A]/80">
+              <p class="font-['Noto_Serif',serif] text-sm md:text-base leading-[1.6] text-[#1A1A1A]/80">
                 {{ t('landing.problem.card1.description') }}
               </p>
             </div>
@@ -63,7 +63,7 @@
               </h3>
             </div>
             <div class="p-4 flex-grow">
-              <p class="font-['Noto_Serif',serif] text-sm leading-[1.6] text-[#1A1A1A]/80">
+              <p class="font-['Noto_Serif',serif] text-sm md:text-base leading-[1.6] text-[#1A1A1A]/80">
                 {{ t('landing.problem.card2.description') }}
               </p>
             </div>
@@ -84,7 +84,7 @@
               </h3>
             </div>
             <div class="p-4 flex-grow">
-              <p class="font-['Noto_Serif',serif] text-sm leading-[1.6] text-[#1A1A1A]/80">
+              <p class="font-['Noto_Serif',serif] text-sm md:text-base leading-[1.6] text-[#1A1A1A]/80">
                 {{ t('landing.problem.card3.description') }}
               </p>
             </div>

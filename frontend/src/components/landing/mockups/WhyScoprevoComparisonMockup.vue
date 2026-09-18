@@ -1,6 +1,6 @@
 <template>
   <!-- Side-by-Side Comparison Mockup -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
     
     <!-- LEFT: Generic PM Suites (Faded Gray Block) -->
     <div class="bg-[#FAFAF9] border-2 border-[#1A1A1A] rounded-none overflow-hidden opacity-60">
@@ -63,7 +63,7 @@
           >
             01
           </span>
-          <span class="font-['Inter',sans-serif] text-[11px] text-[#1A1A1A] font-medium">{{ t('landing.mockup.coreStep1') }}</span>
+          <span class="font-['Inter',sans-serif] text-[11px] md:text-sm text-[#1A1A1A] font-medium">{{ t('landing.mockup.coreStep1') }}</span>
         </div>
 
         <div class="flex justify-center py-0.5">
@@ -78,7 +78,7 @@
           >
             02
           </span>
-          <span class="font-['Inter',sans-serif] text-[11px] text-[#1A1A1A] font-medium">{{ t('landing.mockup.coreStep2') }}</span>
+          <span class="font-['Inter',sans-serif] text-[11px] md:text-sm text-[#1A1A1A] font-medium">{{ t('landing.mockup.coreStep2') }}</span>
         </div>
 
         <div class="flex justify-center py-0.5">
@@ -93,7 +93,7 @@
           >
             03
           </span>
-          <span class="font-['Inter',sans-serif] text-[11px] text-[#166534] font-medium">{{ t('landing.mockup.coreStep3') }}</span>
+          <span class="font-['Inter',sans-serif] text-[11px] md:text-sm text-[#166534] font-medium">{{ t('landing.mockup.coreStep3') }}</span>
         </div>
 
         <div class="flex justify-center py-0.5">
@@ -108,7 +108,7 @@
           >
             04
           </span>
-          <span class="font-['Inter',sans-serif] text-[11px] text-[#1A1A1A] font-medium">{{ t('landing.mockup.coreStep4') }}</span>
+          <span class="font-['Inter',sans-serif] text-[11px] md:text-sm text-[#1A1A1A] font-medium">{{ t('landing.mockup.coreStep4') }}</span>
         </div>
 
         <div class="flex justify-center py-0.5">
@@ -123,7 +123,7 @@
           >
             05
           </span>
-          <span class="font-['Inter',sans-serif] text-[11px] text-[#FAFAF9] font-medium">{{ t('landing.mockup.coreStep5') }}</span>
+          <span class="font-['Inter',sans-serif] text-[11px] md:text-sm text-[#FAFAF9] font-medium">{{ t('landing.mockup.coreStep5') }}</span>
         </div>
 
       </div>
