@@ -6,6 +6,7 @@ import type { Project } from "../../types/api";
 import { useAuthStore } from "../../stores/auth";
 import { swrService } from "../../services/resilience/swr.service";
 import { useI18n } from "../../composables/useI18n";
+import { trackEvent } from "../../services/analytics";
 
 const { t } = useI18n();
 import {
@@ -137,6 +138,7 @@ async function handleCreateProject() {
       clientName: form.value.clientName.trim(),
       totalAllowedRevisions: form.value.totalAllowedRevisions,
     });
+    trackEvent("create_project");
     closeModal();
     await fetchProjects();
   } catch (err: unknown) {

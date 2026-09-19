@@ -14,6 +14,7 @@ import { useI18n } from "../../composables/useI18n";
 import UiQuotaBar from "../../components/ui/UiQuotaBar.vue";
 import ProjectDocumentModal from "../../components/features/ProjectDocumentModal.vue";
 import ManageProjectModal from "../../components/features/ManageProjectModal.vue";
+import { trackEvent } from "../../services/analytics";
 
 const { t, locale } = useI18n();
 
@@ -190,6 +191,7 @@ async function handleSubmitFeedback() {
       rawInput.value,
     );
     const batchId = res.batch.id;
+    trackEvent("create_revision_batch");
     rawInput.value = "";
     isSubmitting.value = false;
     router.push(`/batches/${batchId}`);

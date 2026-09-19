@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import { apiClient, ApiError } from "../../api/client";
 import type { Project } from "../../types/api";
 import { useI18n } from "../../composables/useI18n";
+import { trackEvent } from "../../services/analytics";
 
 const { t } = useI18n();
 
@@ -63,6 +64,7 @@ async function confirmCompleteProject() {
 
   try {
     await apiClient.projects.update(props.project.id, { status: "COMPLETED" });
+    trackEvent("complete_project");
     emit("project-updated");
     emit("close");
   } catch (err: unknown) {
@@ -97,6 +99,7 @@ async function handleReopenProject() {
 
   try {
     await apiClient.projects.update(props.project.id, { status: "ACTIVE" });
+    trackEvent("reopen_project");
     emit("project-updated");
     emit("close");
   } catch (err: unknown) {
@@ -133,6 +136,7 @@ async function confirmDelete() {
 
   try {
     await apiClient.projects.remove(props.project.id);
+    trackEvent("delete_project");
     emit("project-deleted");
   } catch (err: unknown) {
      if (err instanceof ApiError) {
