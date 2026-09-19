@@ -8,6 +8,7 @@ import type {
   PortalBatchResponse,
   ApiErrorResponse,
   ProjectDocument,
+  AIQuota,
 } from '../types/api';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
@@ -226,6 +227,12 @@ export const apiClient = {
     remove: (projectId: string, documentId: string): Promise<void> =>
       request<void>(`/projects/${projectId}/documents/${documentId}`, {
         method: 'DELETE',
+      }),
+  },
+  ai: {
+    quota: (): Promise<AIQuota> =>
+      request<AIQuota>('/ai/quota', {
+        method: 'GET',
       }),
   },
 };

@@ -86,7 +86,7 @@ export default {
       saved: "Tersimpan!",
     },
 
-    workspaceDefaults: {
+workspaceDefaults: {
       title: "Pengaturan Default Workspace",
       revisionsLabel: "Total Revisi yang Diizinkan (Default)",
       revisionsSuffix: "revisi per proyek",
@@ -94,7 +94,13 @@ export default {
       saveBtn: "SIMPAN PREFERENSI",
       saved: "Tersimpan!",
     },
-
+    aiQuota: {
+      title: "PEMAKAIAN AI",
+      desc: "Kuota AI sisi server bulanan. Direset pada tanggal 1 setiap bulan.",
+      usedLabel: "TERPAKAI",
+      resetLabel: "DRESET",
+      exhaustedNote: "Batas bulanan tercapai. Kuota direset di awal bulan berikutnya.",
+    },
     appInfo: {
       title: "Versi & Informasi Aplikasi",
       versionLabel: "VERSI APLIKASI",
@@ -435,7 +441,7 @@ export default {
     paginationAria: "Paginasi batch revisi",
     paginationPrev: "SEBELUMNYA",
     paginationNext: "BERIKUTNYA",
-    errOffline: "Tidak dapat mengirim masukan saat offline.",
+errOffline: "Tidak dapat mengirim masukan saat offline.",
     errDegraded:
       "Tidak dapat mengirim masukan. Layanan backend sedang mengalami gangguan.",
     errAIProcessing: "Analisis AI gagal. Silakan coba lagi.",
@@ -445,6 +451,8 @@ export default {
     errFailedAnalyze: "Gagal menganalisis masukan. Silakan coba lagi.",
     errUnexpected: "Terjadi kesalahan tak terduga.",
     errQuotaExhausted: "Kuota habis. Tunggu persetujuan klien.",
+    errAiQuotaExhausted: "Kuota AI bulanan habis.",
+    goToSettings: "Ke Pengaturan",
     retryBtn: "Coba Lagi",
   },
   batch: {

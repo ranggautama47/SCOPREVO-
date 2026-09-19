@@ -185,7 +185,7 @@ async function handleSubmitFeedback() {
   errorMsg.value = "";
   errorCode.value = null;
 
-  try {
+try {
     const res = await apiClient.projects.submitRevision(
       projectId.value,
       rawInput.value,
@@ -202,6 +202,9 @@ async function handleSubmitFeedback() {
       switch (err.code) {
         case "QUOTA_EXHAUSTED":
           errorMsg.value = t("projectDetail.errQuotaExhausted");
+          break;
+        case "AI_QUOTA_EXHAUSTED":
+          errorMsg.value = t("projectDetail.errAiQuotaExhausted");
           break;
         case "AI_PROCESSING_FAILED":
           errorMsg.value = t("projectDetail.errAIProcessing");
@@ -742,12 +745,23 @@ function handleProjectDeleted() {
             <p class="font-['Noto_Serif',serif] text-base text-[#991B1B]">
               {{ errorMsg }}
             </p>
+            <div
+              v-if="errorCode === 'AI_QUOTA_EXHAUSTED'"
+              class="mt-3 flex items-center gap-2"
+            >
+              <router-link
+                to="/settings"
+                class="text-[#991B1B] underline font-['Inter',sans-serif] text-sm hover:no-underline"
+              >
+                {{ t("projectDetail.goToSettings") }}
+              </router-link>
+            </div>
             <button
-              v-if="
+              v-else-if="
                 errorCode === 'AI_PROCESSING_FAILED' ||
                 errorCode === 'NETWORK_ERROR' ||
                 (errorCode &&
-                  !['QUOTA_EXHAUSTED', 'VALIDATION_ERROR'].includes(errorCode))
+                  !['QUOTA_EXHAUSTED', 'VALIDATION_ERROR', 'AI_QUOTA_EXHAUSTED'].includes(errorCode))
               "
               @click="handleRetryFeedback"
               class="mt-3 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-['Inter',sans-serif] text-xs uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] cursor-pointer"

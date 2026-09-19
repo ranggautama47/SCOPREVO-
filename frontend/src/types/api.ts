@@ -115,6 +115,14 @@ export interface PortalBatchResponse {
   };
 }
 
+export interface AIQuota {
+  period: string;
+  used: number;
+  limit: number;
+  remaining: number;
+  resetAt: string;
+}
+
 export type ProjectDocumentExtractionStatus = 'pending' | 'completed' | 'failed';
 
 export interface ProjectDocument {

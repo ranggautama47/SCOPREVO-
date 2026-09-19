@@ -6,6 +6,7 @@ import { networkState } from "../../services/resilience/network-state";
 import AppTopbar from "../../components/features/AppTopbar.vue";
 import { useI18n } from "../../composables/useI18n";
 import { usePreferencesStore } from "../../stores/preferences";
+import type { AIQuota } from "../../types/api";
 import {
   User,
   Eye,
@@ -56,9 +57,28 @@ const isSubmittingEmailChange = ref(false);
 const defaultQuota = ref<number>(3);
 const quotaSaved = ref(false);
 
+// AI Quota
+const aiQuota = ref<AIQuota | null>(null);
+const isLoadingAiQuota = ref(true);
+const aiQuotaError = ref<string | null>(null);
+
 const isEmailVerified = computed(
   () => authStore.account?.emailVerified === true,
 );
+
+async function fetchAiQuota() {
+  isLoadingAiQuota.value = true;
+  aiQuotaError.value = null;
+  try {
+    const res = await apiClient.ai.quota();
+    aiQuota.value = res;
+  } catch (err: unknown) {
+    aiQuotaError.value =
+      err instanceof ApiError ? err.message : t("settings.aiQuota.exhaustedNote");
+  } finally {
+    isLoadingAiQuota.value = false;
+  }
+}
 
 async function handleRequestEmailChange() {
   if (isMutationsDisabled.value) {
@@ -95,9 +115,18 @@ function loadDefaultQuota() {
   }
 }
 
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString(locale.value, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 onMounted(() => {
   loadDefaultQuota();
   authStore.refreshAccount();
+  fetchAiQuota();
 });
 
 async function handleSendVerification() {
@@ -671,7 +700,67 @@ const languageOptions = computed<{ value: "en" | "id"; label: string }[]>(
       </div>
     </section>
 
-    <!-- 6. APPLICATION VERSION & INFO SECTION -->
+    <!-- 6. AI USAGE QUOTA CARD -->
+    <section
+      class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-6 shadow-[4px_4px_0px_0px_#1A1A1A]"
+    >
+      <div
+        class="flex items-center gap-2 mb-6 border-b-2 border-[#1A1A1A]/10 pb-3"
+      >
+        <Info class="w-5 h-5 text-[#1A1A1A]" />
+        <h2
+          class="font-['Inter',sans-serif] text-xs font-bold uppercase tracking-wider text-[#1A1A1A]"
+        >
+          {{ t("settings.aiQuota.title") }}
+        </h2>
+      </div>
+
+      <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]/70 mb-4">
+        {{ t("settings.aiQuota.desc") }}
+      </p>
+
+      <div v-if="isLoadingAiQuota" class="flex items-center gap-2 font-['JetBrains_Mono',monospace] text-xs text-[#1A1A1A]/60">
+        <span class="animate-pulse">■</span>
+        <span>{{ t("common.loading") }}</span>
+      </div>
+
+      <div v-else-if="aiQuotaError" class="bg-[#FEE2E2] border-2 border-[#1A1A1A] p-4 rounded-none font-['Noto_Serif',serif] text-sm text-[#991B1B]">
+        {{ aiQuotaError }}
+      </div>
+
+      <div v-else-if="aiQuota" class="space-y-4">
+        <!-- Brutalist Progress Bar -->
+        <div class="w-full h-10 bg-[#FAFAF9] border-2 border-[#1A1A1A] rounded-none overflow-hidden relative">
+          <div
+            class="h-full bg-[#006D77] transition-all duration-500 ease-out"
+            :style="{ width: aiQuota.limit > 0 ? (aiQuota.used / aiQuota.limit) * 100 + '%' : '0%' }"
+          ></div>
+          <div v-if="aiQuota.used >= aiQuota.limit" class="absolute inset-0 bg-[#E63946]/20"></div>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3 font-['JetBrains_Mono',monospace] text-xs">
+            <span class="text-[#1A1A1A]/60">{{ t("settings.aiQuota.usedLabel") }}</span>
+            <span class="font-bold text-[#1A1A1A]">{{ aiQuota.used }}</span>
+            <span class="text-[#1A1A1A]/40">/</span>
+            <span class="font-bold text-[#1A1A1A]">{{ aiQuota.limit }}</span>
+          </div>
+          <div class="flex items-center gap-3 font-['JetBrains_Mono',monospace] text-xs text-[#1A1A1A]/60">
+            <span>{{ t("settings.aiQuota.resetLabel") }}</span>
+            <span class="font-medium">{{ formatDate(aiQuota.resetAt) }}</span>
+          </div>
+        </div>
+
+        <div
+          v-if="aiQuota.used >= aiQuota.limit"
+          class="bg-[#FEE2E2] border-2 border-[#E63946] p-3 rounded-none font-['Noto_Serif',serif] text-sm text-[#991B1B]"
+        >
+          {{ t("settings.aiQuota.exhaustedNote") }}
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. APPLICATION VERSION & INFO SECTION -->
     <section
       class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-6 shadow-[4px_4px_0px_0px_#1A1A1A]"
     >

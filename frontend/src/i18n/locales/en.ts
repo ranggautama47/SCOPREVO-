@@ -92,6 +92,13 @@ export default {
       saveBtn: "SAVE PREFERENCE",
       saved: "Saved!",
     },
+    aiQuota: {
+      title: "AI USAGE",
+      desc: "Monthly server-side AI quota. Resets on the 1st of each month.",
+      usedLabel: "USED",
+      resetLabel: "RESETS",
+      exhaustedNote: "Monthly limit reached. Quota resets at the start of the next month.",
+    },
     appInfo: {
       title: "Application Version & Info",
       versionLabel: "APP VERSION",
@@ -437,6 +444,8 @@ export default {
     errFailedAnalyze: "Failed to analyze feedback. Please try again.",
     errUnexpected: "An unexpected error occurred.",
     errQuotaExhausted: "Quota exhausted. Wait for client approval.",
+    errAiQuotaExhausted: "Monthly AI quota exhausted.",
+    goToSettings: "Go to Settings",
     retryBtn: "Retry",
   },
   batch: {
