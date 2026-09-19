@@ -89,6 +89,7 @@
           </router-link>
           <router-link
             to="/register"
+            @click="trackEvent('nav_cta_click')"
             class="font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wider px-5 py-2 border-2 border-[#1A1A1A] bg-[#006D77] text-[#FAFAF9] shadow-[4px_4px_0px_0px_#1A1A1A] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] transition-all focus:ring-2 focus:ring-[#006D77] focus:outline-none"
           >
             {{ t("landing.nav.getStarted") }}
@@ -181,7 +182,7 @@
           </router-link>
           <router-link
             to="/register"
-            @click="menuOpen = false"
+            @click="trackEvent('nav_cta_click'); menuOpen = false"
             class="font-['Inter',sans-serif] text-sm font-semibold uppercase tracking-wider px-5 py-2.5 border-2 border-[#1A1A1A] bg-[#006D77] text-[#FAFAF9] text-center shadow-[4px_4px_0px_0px_#1A1A1A]"
           >
             {{ t("landing.nav.getStarted") }}
@@ -200,6 +201,7 @@ import { Menu, X } from "lucide-vue-next";
 import { useAuthStore } from "@/stores/auth";
 import { usePreferencesStore } from "@/stores/preferences";
 import { useI18n } from "@/composables/useI18n";
+import { trackEvent } from "@/services/analytics";
 
 const menuOpen = ref(false);
 const authStore = useAuthStore();

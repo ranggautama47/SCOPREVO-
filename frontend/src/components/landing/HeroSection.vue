@@ -32,6 +32,7 @@
           <div>
             <router-link
               to="/register"
+              @click="trackEvent('hero_cta_click')"
               class="inline-flex items-center justify-center gap-2 border-2 border-[#1A1A1A] bg-[#006D77] px-6 py-3 md:px-7 md:py-3.5 font-['Inter',sans-serif] text-xs md:text-sm font-semibold uppercase tracking-wider text-[#FAFAF9] shadow-[4px_4px_0px_0px_#1A1A1A] transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A]"
             >
               {{ t("landing.hero.cta") }}
@@ -57,6 +58,7 @@
 <script setup lang="ts">
 import { ArrowRight } from "lucide-vue-next";
 import { useI18n } from "@/composables/useI18n";
+import { trackEvent } from "@/services/analytics";
 
 const { t } = useI18n();
 </script>

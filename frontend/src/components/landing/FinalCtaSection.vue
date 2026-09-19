@@ -14,6 +14,7 @@
       <!-- CTA Button -->
       <router-link
         to="/register"
+        @click="trackEvent('final_cta_click')"
         class="font-['Inter',sans-serif] text-sm font-medium uppercase tracking-wider px-9 py-4 border-2 border-[#FAFAF9] bg-[#006D77] text-[#FAFAF9] shadow-[4px_4px_0px_0px_#FAFAF9] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_0px_#FAFAF9] transition-all inline-flex items-center gap-2 focus:ring-2 focus:ring-[#FAFAF9] focus:outline-none"
         :aria-label="t('landing.cta.cta')"
       >
@@ -27,6 +28,7 @@
 <script setup lang="ts">
 import { ArrowRight } from 'lucide-vue-next'
 import { useI18n } from '@/composables/useI18n'
+import { trackEvent } from '@/services/analytics'
 
 const { t } = useI18n()
 </script>
