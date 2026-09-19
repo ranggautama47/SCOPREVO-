@@ -3,6 +3,7 @@ import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { apiClient, ApiError } from "../../api/client";
 import { useI18n } from "@/composables/useI18n";
+import { trackEvent } from "@/services/analytics";
 
 const route = useRoute();
 const router = useRouter();
@@ -21,6 +22,7 @@ onMounted(async () => {
 
   try {
     await apiClient.auth.verifyEmail(token);
+    trackEvent("verify_email");
     status.value = "success";
   } catch (err: unknown) {
     status.value = "error";

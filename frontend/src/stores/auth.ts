@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { apiClient } from '../api/client';
 import type { UserAccount } from '../types/api';
 import { purgeCache } from '../services/resilience/cache.repository';
+import { trackEvent } from '../services/analytics';
 
 const TOKEN_KEY = 'scoprevo_jwt';
 const ACCOUNT_KEY = 'scoprevo_account';
@@ -51,6 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await apiClient.auth.login({ email, password });
       setToken(response.token);
       setAccount(response.account);
+      trackEvent('login');
       return response;
     } catch (err: any) {
       error.value = err.message || 'Login failed';
@@ -67,6 +69,7 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await apiClient.auth.register({ name, email, password });
       setToken(response.token);
       setAccount(response.account);
+      trackEvent('sign_up');
       return response;
     } catch (err: any) {
       error.value = err.message || 'Registration failed';
