@@ -19,40 +19,40 @@
 [![License](https://img.shields.io/badge/License-MIT-1A1A1A?style=for-the-badge)](./LICENSE)
 [![Status](https://img.shields.io/badge/Status-Live-2A9D8F?style=for-the-badge)](https://scoprevo.edgeone.dev/)
 
-> Turn messy client feedback into clear revisions — and know what is inside or outside the project scope.
+> Ubah feedback klien yang berantakan menjadi revisi yang jelas — dan ketahui mana yang termasuk atau di luar scope proyek.
 
 </div>
 
 ---
 
-> **Note on naming/brand:** product was previously named ScopeGuard; SCOPREVO (Scope + Revision) is the current name going forward. Visual identity (logo, color system, brand symbol) is intentionally **not locked in this document** — that ownership sits with the UI/UX Lead per the multi-AI role split (this doc, as Product/System Architect output, covers scope, data model, AI contract, and roadmap only).
+> **Catatan penamaan/brand:** produk ini sebelumnya bernama ScopeGuard; SCOPREVO (Scope + Revision) adalah nama saat ini dan seterusnya. Identitas visual (logo, sistem warna, simbol brand) secara sengaja **tidak dikunci di dokumen ini** — kepemilikan tersebut berada pada UI/UX Lead sesuai pembagian peran multi-AI (dokumen ini, sebagai output Product/System Architect, hanya mencakup scope, data model, AI contract, dan roadmap).
 
 SCOPREVO mengubah feedback klien yang berantakan (chat WhatsApp, email) menjadi checklist revisi yang terstruktur, sekaligus secara otomatis mendeteksi permintaan mana yang masih termasuk scope proyek dan mana yang berpotensi menjadi pekerjaan tambahan (out of scope).
 
 ---
 
-## 📌 Table of Contents
+## 📌 Daftar Isi
 
-- [Problem](#problem)
-- [Solution](#solution)
-- [Why this, not a generic PM tool](#why-this-not-a-generic-pm-tool)
-- [Core value in one line](#core-value-in-one-line)
-- [MVP Scope (in)](#mvp-scope-in)
-- [Explicitly deferred (not in MVP)](#explicitly-deferred-not-in-mvp)
-- [Measuring impact (required for case study)](#measuring-impact-required-for-case-study)
-- [Platform & Tech Stack](#platform--tech-stack)
-- [Docs in this set](#docs-in-this-set)
+- [Masalah](#-masalah)
+- [Solusi](#-solusi)
+- [Kenapa ini, bukan PM tool generik](#-kenapa-ini-bukan-pm-tool-generik)
+- [Value inti dalam satu kalimat](#-value-inti-dalam-satu-kalimat)
+- [Cakupan MVP (yang termasuk)](#-cakupan-mvp-yang-termasuk)
+- [Ditunda secara eksplisit (tidak masuk MVP)](#-ditunda-secara-eksplisit-tidak-masuk-mvp)
+- [Mengukur Dampak (wajib untuk case study)](#-mengukur-dampak-wajib-untuk-case-study)
+- [Platform & Tech Stack](#-platform--tech-stack)
+- [Dokumentasi dalam Set Ini](#-dokumentasi-dalam-set-ini)
 
 ---
 
-## 🎯 Problem
+## 🎯 Masalah
 
 Freelancer dan agency kecil di Indonesia kehilangan waktu dan uang karena:
 1. Feedback klien tersebar dan tidak terstruktur (WhatsApp, email, campur aduk dengan basa-basi).
 2. Tidak ada batas jelas antara "revisi yang disepakati" dan "request baru yang harusnya kena biaya tambahan" → scope creep.
 3. Klien enggan pakai tools project management berat (Jira/Trello/Asana) yang butuh onboarding.
 
-## 💡 Solution
+## 💡 Solusi
 
 Satu alur inti, bukan aplikasi serba bisa:
 Client sends messy feedback (text)
@@ -69,74 +69,77 @@ Magic link sent to client
 Client confirms — no login needed
 
 
-## 🧭 Why this, not a generic PM tool
+## 🧭 Kenapa ini, bukan PM tool generik
 
 Moxie, Plutio, dan Odoo adalah platform all-in-one (invoicing, CRM, scheduling, contracts, dll). Keberadaan mereka justru memvalidasi bahwa freelancer butuh business tooling — tapi tak satupun fokus mendalam pada satu masalah spesifik: **mengekstrak dan mengklasifikasi revisi dari feedback berantakan, lalu melindungi scope proyek secara real-time.** SCOPREVO sengaja sempit: satu workflow, dikerjakan tuntas.
 
-## ✨ Core value in one line
+## ✨ Value inti dalam satu kalimat
 
 > "AI mengubah feedback klien yang tidak terstruktur menjadi checklist revisi yang bisa ditindaklanjuti, dan melindungi freelancer dari scope creep."
 
-## ✅ MVP Scope (in)
+## ✅ Cakupan MVP (yang termasuk)
 
 - Input: paste teks mentah (WhatsApp/email copy-paste)
 - AI extraction → structured JSON (item, kategori, klasifikasi scope, alasan)
 - Revision quota tracking per project
-- Magic link client portal (no login)
+- Magic link client portal (tanpa login)
 - Client sign-off / confirm
 
-## 🚫 Explicitly deferred (not in MVP)
+##  🚫 Ditunda secara eksplisit (tidak masuk MVP)
 
-- WhatsApp Business API integration
-- Voice note transcription
+- Integrasi WhatsApp Business API
+- Transkripsi voice note
 - OCR / PDF / DOCX / XLSX ingestion
 - Payment/billing
 - Team roles / RBAC
-- Analytics dashboard
+- Dashboard analytics
+
+Fitur-fitur ini sah untuk Phase 2/3 — sengaja ditunda supaya MVP bisa dirilis dan didemokan dengan bersih.
 
 These are legitimate Phase 2/3 features — deferred so the MVP ships and demos cleanly.
 
-## 📊 Measuring impact (required for case study)
+## 📊 Mengukur Dampak (wajib untuk case study)
 
-Every claim must come from an actual measured run, not a marketing estimate:
+Setiap klaim harus berasal dari pengukuran nyata, bukan estimasi marketing:
 
-| Metric | Manual | SCOPREVO |
+| Metrik | Manual | SCOPREVO |
 |---|---|---|
-| Time to interpret feedback | ~12–30 min | ~10–30 sec (AI) |
-| Ambiguous requests caught | Often missed | Flagged as NEEDS_REVIEW |
-| Out-of-scope requests caught | Often missed until too late | Flagged immediately with reason |
+| Waktu memahami feedback | ~12–30 menit | ~10–30 detik (AI) |
+| Request ambigu yang tertangkap | Sering terlewat | Di-flag sebagai NEEDS_REVIEW |
+| Request di luar scope yang tertangkap | Sering terlewat | Langsung di-flag dengan alasan |
 
-**Status: no real beta tester identified yet.** This is an open risk — the before/after case study needs a real feedback sample from an actual freelancer/agency contact, not a fabricated one. Do not write the case study numbers until this is resolved.
+**Status: belum ada beta tester nyata yang teridentifikasi.** Ini risiko terbuka — case study before/after butuh sampel feedback asli dari kenalan freelancer/agency, bukan yang dibuat-buat. Jangan tulis angka case study sampai ini terselesaikan.
 
 ## 🛠️ Platform & Tech Stack
 
-SCOPREVO is being built for **DevHandal 2026 Batch 2 (Codepolitan x Tencent EdgeOne)** — Misi 2 requires a technical review/tutorial based on a project actually published on EdgeOne Makers, so the app needs to be real and live on that platform (not just described).
+SCOPREVO dibangun untuk **DevHandal 2026 Batch 2 (Codepolitan x Tencent EdgeOne)** — Misi 2 mensyaratkan review teknis / tutorial berdasarkan project yang benar-benar published di EdgeOne Makers, jadi aplikasinya harus live di platform tersebut (bukan cuma dideskripsikan).
 
-**Locked stack:**
+**Stack yang dikunci:**
 
-| Layer | Choice |
+| Layer | Pilihan |
 |---|---|
 | Frontend | Vue 3 + Vite + TypeScript |
 | Backend | Express.js + TypeScript |
 | Deployment / Hosting | Tencent EdgeOne Makers |
-| Serverless Runtime | EdgeOne Cloud Functions (Express mounted as a function handler) |
+| Serverless Runtime | EdgeOne Cloud Functions (Express mounted sebagai function handler) |
 | Database | PostgreSQL |
 | Database Provider | Supabase |
 | AI | EdgeOne Models / external LLM API |
-| Optional | EdgeOne KV (cache/session only, not primary storage), EdgeOne Blob, EdgeOne Observability |
+| Opsional | EdgeOne KV (cache/session saja, bukan primary storage), EdgeOne Blob, EdgeOne Observability |
 
-**Why not KV/Blob as primary storage:** SCOPREVO's data model is inherently relational (Account → Project → RevisionBatch → RevisionItem, with foreign keys, enums, and quota calculations that depend on filtered counts). EdgeOne's native KV/Blob layer is suited to cache, session tokens, and simple config — not this shape of data. PostgreSQL via Supabase is used instead.
+**Kenapa bukan KV/Blob sebagai primary storage:** Data model SCOPREVO inherently relasional (Account → Project → RevisionBatch → RevisionItem, dengan foreign key, enum, dan kalkulasi quota yang bergantung pada filtered count). Layer KV/Blob native EdgeOne cocok untuk cache, session token, dan konfigurasi sederhana — bukan untuk bentuk data ini. Karena itu dipakai PostgreSQL via Supabase.
 
-**Deployment structure note (unverified — confirm in EdgeOne console before building):** current best understanding is a single EdgeOne project with one root directory, where the Express backend lives inside a `cloud-functions/` folder alongside the Vue frontend source (per EdgeOne's own `express-template`), rather than two independently-rooted `apps/web` + `apps/api` folders in one project. If two fully separate deployments are wanted instead, that requires two separate EdgeOne projects pointing at two subdirectories — confirm this in the console before committing to a folder layout.
+**Catatan struktur deployment (belum diverifikasi — konfirmasi di console EdgeOne sebelum membangun):** pemahaman saat ini adalah satu EdgeOne project dengan satu root directory, di mana backend Express berada di dalam folder `cloud-functions/` bersamaan dengan source Vue frontend (mengikuti `express-template` milik EdgeOne), bukan dua folder `apps/web` + `apps/api` dengan root terpisah dalam satu project. Kalau memang ingin dua deployment sepenuhnya terpisah, itu membutuhkan dua EdgeOne project yang menunjuk ke dua subdirektori — konfirmasi ini di console sebelum mengunci layout folder.
 
-## 📚 Docs in this set
+## 📚 Dokumentasi dalam Set Ini
 
-| Document | Description |
+| Dokumen | Deskripsi |
 |---|---|
-| 📘 [`README.md`](./README.md) | This file — project overview |
-| 🗺️ [`PHASES.md`](./PHASES.md) | Build roadmap, day by day |
+| 📘 [`README.md`](./README.md) | File ini — overview project (Bahasa Indonesia) |
+| 📘 [`README.en.md`](./README.en.md) | Versi Bahasa Inggris |
+| 🗺️ [`PHASES.md`](./PHASES.md) | Roadmap build, hari per hari |
 | 🗄️ [`DATABASE.md`](./DATABASE.md) | Relational data model (ERD + schema) |
-| 📐 [`UML.md`](./UML.md) | Use case, sequence, and state diagrams |
+| 📐 [`UML.md`](./UML.md) | Use case, sequence, dan state diagram |
 | 🏗️ [`APPLICATION_ARCHITECTURE.md`](./APPLICATION_ARCHITECTURE.md) | Layered architecture + API contract |
 | 🎨 [`DESIGN_SYSTEM_BRUTALIST.md`](./DESIGN_SYSTEM_BRUTALIST.md) | Neo-Brutalist design system v2.1 |
 
@@ -144,7 +147,7 @@ SCOPREVO is being built for **DevHandal 2026 Batch 2 (Codepolitan x Tencent Edge
 
 <div align="center">
 
-**Built with** ❤️ **for DevHandal 2026 Batch 2**
+**Dibangun dengan** ❤️ **untuk DevHandal 2026 Batch 2**
 
 [![Codepolitan](https://img.shields.io/badge/Codepolitan-x%20Tencent%20EdgeOne-1A1A1A?style=flat-square)](https://codepolitan.com/)
 [![EdgeOne Makers](https://img.shields.io/badge/Powered%20by-EdgeOne%20Makers-006D77?style=flat-square)](https://edgeone.ai/)
