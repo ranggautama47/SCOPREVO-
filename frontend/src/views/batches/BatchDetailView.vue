@@ -12,6 +12,7 @@ import { useAuthStore } from "../../stores/auth";
 import { swrService } from "../../services/resilience/swr.service";
 import { useI18n } from "../../composables/useI18n";
 import { Link2, Copy, ExternalLink, RefreshCw } from "lucide-vue-next";
+import { trackEvent } from "../../services/analytics";
 
 const { t, locale } = useI18n();
 
@@ -178,6 +179,7 @@ async function handleShare() {
       batchId.value,
     );
     const magicToken = res.batch.magicToken;
+    trackEvent("share_revision_batch");
     portalUrl.value = `${window.location.origin}/portal/${magicToken}`;
     showModal.value = true;
   } catch (err: unknown) {

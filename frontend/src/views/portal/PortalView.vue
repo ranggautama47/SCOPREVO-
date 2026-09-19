@@ -4,6 +4,7 @@ import { useRoute } from "vue-router";
 import { apiClient, ApiError } from "../../api/client";
 import type { PortalBatchResponse, ScopeStatus } from "../../types/api";
 import { useI18n } from "../../composables/useI18n";
+import { trackEvent } from "../../services/analytics";
 
 const { t, locale } = useI18n();
 
@@ -87,6 +88,7 @@ async function handleConfirm() {
   isConfirming.value = true;
   try {
     await apiClient.portal.confirm(token.value);
+    trackEvent("approve_revision_batch");
     await fetchPortalData();
   } catch (err: unknown) {
     if (err instanceof ApiError && err.status === 409) {
