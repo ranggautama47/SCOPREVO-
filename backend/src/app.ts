@@ -10,6 +10,7 @@ import revisionRoutes from './routes/revision.routes';
 import batchRoutes from './routes/batch.routes';
 import portalRoutes from './routes/portal.routes';
 import documentRoutes from './routes/document.routes';
+import aiQuotaRoutes from './routes/aiQuota.routes';
 const app = express();
 app.use(helmet());
 app.use(cors({ origin: env.CORS_ORIGINS, credentials: true }));
@@ -25,6 +26,7 @@ app.use('/projects', revisionRoutes);
 app.use('/api/batches', batchRoutes);
 app.use('/api/overview', overviewRoutes);
 app.use('/api/portal', portalRoutes);
+app.use('/api/ai', aiQuotaRoutes);
 app.use((_req, res) => {
   res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found.' } });
 });

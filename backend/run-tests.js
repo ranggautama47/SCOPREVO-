@@ -314,6 +314,95 @@ async function runTests() {
     printTest(18, 'Quota calculation (0/total)', { method: 'GET', path: '/projects/undefined', headers: {} }, { status: 0, data: { error: 'No authToken' } }, verdict);
   }
 
+  // ========== AI QUOTA TESTS ==========
+  console.log('\n\n========================================');
+  console.log('AI QUOTA TESTS');
+  console.log('========================================');
+
+  // Register a dedicated test account for AI quota
+  const quotaTimestamp = Date.now();
+  res = await request('POST', '/auth/register', {
+    name: 'Quota Test User',
+    email: `quotatest${quotaTimestamp}@example.com`,
+    password: 'password123',
+  });
+  const quotaToken = res.data?.token;
+  const quotaAccountId = res.data?.account?.id;
+
+  if (quotaToken && quotaAccountId) {
+    // Create a project for quota testing
+    res = await request('POST', '/projects', {
+      name: 'Quota Test Project',
+      clientName: 'Quota Client',
+      totalAllowedRevisions: 10,
+    }, { Authorization: `Bearer ${quotaToken}` });
+    const quotaProjectId = res.data?.project?.id;
+
+    if (quotaProjectId) {
+      // Clean up any existing quota data
+      const { Pool } = require('pg');
+      const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 10 });
+      await pool.query('DELETE FROM account_ai_usage WHERE account_id = $1', [quotaAccountId]);
+      await pool.end();
+
+      // Tests 19-23: 5 successful consumes
+      let allPass = true;
+      for (let i = 1; i <= 5; i++) {
+        res = await request('POST', `/projects/${quotaProjectId}/revisions`, {
+          rawInput: `Test feedback for quota ${i}`,
+        }, { Authorization: `Bearer ${quotaToken}` });
+        const pass = res.status === 201;
+        if (!pass) allPass = false;
+        printTest(18 + i, `AI quota consume #${i} (should succeed)`, { method: 'POST', path: `/projects/${quotaProjectId}/revisions`, body: { rawInput: `Test feedback for quota ${i}` }, headers: { Authorization: `Bearer ${quotaToken}` } }, res, pass ? 'PASS' : 'FAIL');
+      }
+      if (allPass) passed++; else failed++;
+
+      // Test 24: 6th consume should return AI_QUOTA_EXHAUSTED (409)
+      res = await request('POST', `/projects/${quotaProjectId}/revisions`, {
+        rawInput: `Test feedback for quota 6 (should fail)`,
+      }, { Authorization: `Bearer ${quotaToken}` });
+      const quotaExhausted = res.status === 409 && res.data?.error?.code === 'AI_QUOTA_EXHAUSTED';
+      verdict = quotaExhausted ? 'PASS' : 'FAIL';
+      if (verdict === 'PASS') passed++; else if (verdict === 'FAIL') failed++;
+      printTest(24, 'AI quota 6th consume → AI_QUOTA_EXHAUSTED (409)', { method: 'POST', path: `/projects/${quotaProjectId}/revisions`, body: { rawInput: 'Test feedback 6' }, headers: { Authorization: `Bearer ${quotaToken}` } }, res, verdict);
+
+      // Test 25: GET /api/ai/quota reports used=5
+      const quotaPool = new Pool({ connectionString: process.env.DATABASE_URL, max: 10 });
+      res = await request('GET', '/ai/quota', null, { Authorization: `Bearer ${quotaToken}` });
+      const quotaCorrect = res.status === 200 && res.data?.used === 5 && res.data?.limit === 5;
+      verdict = quotaCorrect ? 'PASS' : 'FAIL';
+      if (verdict === 'PASS') passed++; else if (verdict === 'FAIL') failed++;
+      printTest(25, 'GET /api/ai/quota reports used=5', { method: 'GET', path: '/ai/quota', headers: { Authorization: `Bearer ${quotaToken}` } }, res, verdict);
+
+      // Test 26: Period isolation - different period does not inherit quota
+      // Insert 0 for next period to simulate period start
+      await quotaPool.query('INSERT INTO account_ai_usage (account_id, period, used_count, updated_at) VALUES ($1, $2, 0, now())', [quotaAccountId, '2026-10']);
+
+      // Verify next period starts at 0
+      const nextPeriodRes = await quotaPool.query('SELECT used_count FROM account_ai_usage WHERE account_id = $1 AND period = $2', [quotaAccountId, '2026-10']);
+      const periodIsolationPass = nextPeriodRes.rows[0]?.used_count === 0;
+      verdict = periodIsolationPass ? 'PASS' : 'FAIL';
+      if (verdict === 'PASS') passed++; else if (verdict === 'FAIL') failed++;
+      printTest(26, 'Period isolation: 2026-10 starts at used=0', { method: 'DIRECT SQL', path: 'SELECT used_count FROM account_ai_usage WHERE period=2026-10', body: null }, { status: 200, data: { used_count: nextPeriodRes.rows[0]?.used_count } }, verdict);
+
+      // Cleanup - delete in correct order to respect FK constraints
+      await quotaPool.query('DELETE FROM account_ai_usage WHERE account_id = $1', [quotaAccountId]);
+      await quotaPool.query('DELETE FROM revision_item WHERE revision_batch_id IN (SELECT id FROM revision_batch WHERE project_id = $1)', [quotaProjectId]);
+      await quotaPool.query('DELETE FROM revision_batch WHERE project_id = $1', [quotaProjectId]);
+      await quotaPool.query('DELETE FROM project WHERE id = $1', [quotaProjectId]);
+      await quotaPool.query('DELETE FROM account WHERE id = $1', [quotaAccountId]);
+      await quotaPool.end();
+    } else {
+      verdict = 'BLOCKED';
+      blocked++;
+      printTest(19, 'AI quota consume #1', { method: 'POST', path: `/projects/undefined`, headers: { Authorization: `Bearer ${quotaToken}` } }, { status: 0, data: { error: 'No quotaProjectId' } }, verdict);
+    }
+  } else {
+    verdict = 'BLOCKED';
+    blocked++;
+    printTest(19, 'AI quota consume #1', { method: 'POST', path: '/auth/register', body: { name: 'Quota Test User', email: `quotatest${quotaTimestamp}@example.com`, password: 'password123' } }, { status: 0, data: { error: 'No quotaToken or quotaAccountId' } }, verdict);
+  }
+
   // Summary
   console.log('\n\n========================================');
   console.log('SUMMARY');

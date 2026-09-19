@@ -45,6 +45,9 @@ export const env = {
   ENABLE_PROJECT_CONTEXT: optionalEnv('ENABLE_PROJECT_CONTEXT') === 'true',
   ENABLE_LANGUAGE_MIRRORING: optionalEnv('ENABLE_LANGUAGE_MIRRORING') === 'true',
   
+  // === AI Quota ===
+  SERVER_AI_MONTHLY_LIMIT: parseInt(optionalEnv('SERVER_AI_MONTHLY_LIMIT', '5'), 10),
+  
   // === SMTP ===
   SMTP_HOST: optionalEnv('SMTP_HOST'),
   SMTP_PORT: parseInt(optionalEnv('SMTP_PORT', '587'), 10),

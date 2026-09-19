@@ -27,6 +27,7 @@ Relasi:
 - Satu **Project** punya banyak **RevisionBatch** (setiap kali klien kirim feedback baru = 1 batch).
 - Satu **RevisionBatch** punya banyak **RevisionItem** (hasil ekstraksi AI, satu task per baris).
 - **Project.usedRevisions** dihitung dari jumlah RevisionBatch yang sudah **APPROVED saja** — DRAFT dan PENDING_CONFIRMATION tidak mengurangi kuota. Ini penting supaya freelancer tidak dirugikan kalau klien belum sempat konfirmasi.
+- Satu **Account** punya banyak **AccountAiUsage** (satu baris per bulan YYYY-MM) — melacak pemakaian AI bulanan per akun.
 
 ---
 
@@ -58,6 +59,16 @@ Satu proyek dengan satu klien.
 Derived (dihitung, tidak disimpan langsung):
 - `usedRevisions` = count(RevisionBatch where status = APPROVED)
 - `remainingRevisions` = totalAllowedRevisions − usedRevisions
+
+### AccountAiUsage
+Pelacakan pemakaian AI bulanan per akun (server-side monthly quota).
+
+| Field | Type | Notes |
+|---|---|---|
+| accountId | UUID (PK, FK → Account) | Bagian dari PK komposit |
+| period | Text (PK) | Format YYYY-MM, e.g. "2026-09" |
+| usedCount | Int | default 0 |
+| updatedAt | DateTime | |
 
 ### RevisionBatch
 Satu submission feedback dari klien (satu sesi paste teks).
@@ -126,6 +137,14 @@ CREATE TABLE project (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE account_ai_usage (
+  account_id UUID NOT NULL REFERENCES account(id) ON DELETE CASCADE,
+  period TEXT NOT NULL,
+  used_count INT NOT NULL DEFAULT 0,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (account_id, period)
+);
+
 CREATE TABLE revision_batch (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES project(id),
@@ -155,7 +174,7 @@ Catatan: `CHECK` constraint di atas menegakkan aturan "reason wajib kalau OUT_OF
 ## Reference schema — Drizzle ORM (TypeScript, untuk Express backend)
 
 ```ts
-import { pgTable, uuid, text, timestamp, integer, boolean, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, timestamp, integer, boolean, pgEnum, primaryKey } from 'drizzle-orm/pg-core';
 
 export const revisionStatus = pgEnum('revision_status', ['DRAFT', 'PENDING_CONFIRMATION', 'APPROVED']);
 export const scopeStatus = pgEnum('scope_status', ['IN_SCOPE', 'OUT_OF_SCOPE', 'NEEDS_REVIEW']);
@@ -176,6 +195,15 @@ export const project = pgTable('project', {
   totalAllowedRevisions: integer('total_allowed_revisions').notNull().default(3),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const accountAiUsage = pgTable('account_ai_usage', {
+  accountId: uuid('account_id').notNull().references(() => account.id, { onDelete: 'cascade' }),
+  period: text('period').notNull(),
+  usedCount: integer('used_count').notNull().default(0),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.accountId, table.period] }),
+}));
 
 export const revisionBatch = pgTable('revision_batch', {
   id: uuid('id').primaryKey().defaultRandom(),

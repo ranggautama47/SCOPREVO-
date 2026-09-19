@@ -6,6 +6,7 @@ import {
 } from '../repositories/revision.repository';
 import { projectDocumentRepository } from '../repositories/project-document.repository';
 import { aiService } from './ai.service';
+import { aiQuotaService } from './aiQuota.service';
 import { NotFoundError, ConflictError } from '../middleware/error.middleware';
 import { env } from '../config/env';
 import { RevisionBatchRow, RevisionItemRow, ProjectDocumentRow } from '../types/db.types';
@@ -127,7 +128,10 @@ export const revisionService = {
       );
     }
 
-    // 4. Call AI service (validated schema and model fallback/retry)
+    // 4. Server-side AI quota: consume 1 from monthly account limit BEFORE AI call
+    await aiQuotaService.consume(accountId);
+
+    // 5. Call AI service (validated schema and model fallback/retry)
     let context = '';
     if (env.ENABLE_PROJECT_CONTEXT) {
       try {
@@ -147,7 +151,7 @@ export const revisionService = {
       aiResult = await aiService.extractRevisions(rawInput);
     }
 
-    // 5. Persist atomically using a PostgreSQL transaction
+    // 6. Persist atomically using a PostgreSQL transaction
     const client = await db.connect();
     try {
       await client.query('BEGIN');
