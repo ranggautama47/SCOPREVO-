@@ -365,14 +365,14 @@ function backToLogin() {
             <button
               type="submit"
               :disabled="isSubmittingForgot"
-              class="w-full bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-brutal hover:-translate-x-0.5 hover:-translate-y-0.5 transition-all disabled:opacity-50 rounded-none"
+              class="w-full bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-brutal hover:-translate-x-1.5 hover:-translate-y-1.5 transition-all disabled:opacity-50 rounded-none"
             >
               {{ isSubmittingForgot ? t('auth.login.sending') : t('auth.login.sendResetLink') }}
             </button>
             <button
               type="button"
               @click="toggleForgotPassword"
-              class="font-body text-sm text-[#1A1A1A]/70 cursor-pointer hover:underline"
+              class="font-body text-sm text-[#1A1A1A]/70 cursor-pointer hover:underline hover:scale-105 transition-all"
             >
               {{ t('auth.login.backToSignIn') }}
             </button>
@@ -456,7 +456,7 @@ function backToLogin() {
               <button
                 type="button"
                 @click="toggleForgotPassword"
-                class="font-ui text-[#006D77] underline underline-offset-4 decoration-2 font-semibold cursor-pointer hover:text-[#004d54]"
+                class="font-ui text-[#006D77] underline underline-offset-4 decoration-2 font-semibold cursor-pointer hover:text-[#004d54] hover:scale-105 hover:-translate-x-1.5 transition-all"
               >
                 {{ t('auth.login.forgotPasswordLink') }}
               </button>
@@ -465,7 +465,7 @@ function backToLogin() {
               {{ t('auth.login.noAccount') }}
               <router-link
                 to="/register"
-                class="font-ui text-[#006D77] underline underline-offset-2 ml-1 font-semibold"
+                class="font-ui text-[#006D77] underline underline-offset-2 ml-1 font-semibold hover:scale-105 hover:-translate-x-1.5 transition-all"
               >
                 {{ t('auth.login.register') }}
               </router-link>
