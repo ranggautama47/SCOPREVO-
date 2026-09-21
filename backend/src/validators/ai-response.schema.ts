@@ -3,9 +3,13 @@ import { z } from 'zod';
 export const scopeStatusEnum = z.enum(['IN_SCOPE', 'OUT_OF_SCOPE', 'NEEDS_REVIEW']);
 export type ScopeStatus = z.infer<typeof scopeStatusEnum>;
 
+export const revisionCategoryEnum = z.enum(['UI', 'LAYOUT', 'COPYWRITING', 'BUG_FIX', 'NEW_FEATURE', 'CONTENT']);
+export type RevisionCategory = z.infer<typeof revisionCategoryEnum>;
+
 export const aiRevisionItemSchema = z
   .object({
     description: z.string().trim().min(1, 'Item description cannot be empty'),
+    category: revisionCategoryEnum.optional(),
     scope: scopeStatusEnum,
     reason: z.string().trim().min(1, 'Reason cannot be empty').optional(),
   })
@@ -21,7 +25,7 @@ export const aiRevisionItemSchema = z
   })
   .transform((item) => ({
     description: item.description,
-    category: null,
+    category: item.category ?? null,
     scopeStatus: item.scope,
     reason: item.reason ?? null,
   }));

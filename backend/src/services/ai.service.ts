@@ -1,5 +1,6 @@
 import { env } from '../config/env';
 import { AppError } from '../middleware/error.middleware';
+import { ByokAuthFailedError } from '../middleware/error.middleware';
 import { AIResponseOutput, aiResponseSchema } from '../validators/ai-response.schema';
 
 const MAX_CONTEXT_CHARS = 24_000;
@@ -8,13 +9,14 @@ const MAX_PER_FILE_CHARS = 8_000;
 const BASE_SYSTEM_PROMPT = `You are SCOPREVO Revision Intelligence Engine.
 Analyze the client feedback and extract actionable revision items.
 Return JSON only in this exact shape:
-{"summary":"...","items":[{"description":"...","scope":"IN_SCOPE"},{"description":"...","scope":"OUT_OF_SCOPE","reason":"..."},{"description":"...","scope":"NEEDS_REVIEW","reason":"..."}]}
+{"summary":"...","items":[{"description":"...","category":"UI","scope":"IN_SCOPE"},{"description":"...","category":"NEW_FEATURE","scope":"OUT_OF_SCOPE","reason":"..."},{"description":"...","category":"BUG_FIX","scope":"NEEDS_REVIEW","reason":"..."}]}
 Use IN_SCOPE, OUT_OF_SCOPE, or NEEDS_REVIEW.
 OUT_OF_SCOPE always requires a non-empty reason.
 NEEDS_REVIEW is for ambiguous items you are unsure about (e.g. unclear whether covered by the contract);
 it also requires a non-empty reason explaining the ambiguity.
 If a request is ambiguous or you cannot confidently determine whether it falls within the project
-contract scope, classify it as NEEDS_REVIEW and provide a brief reason explaining the ambiguity.`;
+contract scope, classify it as NEEDS_REVIEW and provide a brief reason explaining the ambiguity.
+For each item, classify its category as one of: UI, LAYOUT, COPYWRITING, BUG_FIX, NEW_FEATURE, CONTENT. Choose the closest fit; category is optional only if truly none apply.`;
 
 const PROJECT_CONTEXT_PROMPT = `
 PROJECT CONTEXT GROUNDING RULES (applied only when project documents are provided):
@@ -194,6 +196,28 @@ async function requestAndValidate(provider: ProviderConfig, rawInput: string, sy
   throw lastFailure ?? providerFailure(provider, 'schema', 'Provider output validation failed.');
 }
 
+function createByokProvider(provider: 'openrouter' | 'google', apiKey: string): ProviderConfig {
+  if (provider === 'google') {
+    return {
+      provider: 'google',
+      baseURL: env.PRIMARY_LLM_BASE_URL,
+      apiKey,
+      model: env.PRIMARY_LLM_MODEL,
+    };
+  }
+  return {
+    provider: 'openrouter',
+    baseURL: env.FALLBACK_LLM_BASE_URL,
+    apiKey,
+    model: env.FALLBACK_LLM_MODEL,
+  };
+}
+
+export interface ByokOptions {
+  provider: 'openrouter' | 'google';
+  apiKey: string;
+}
+
 export const aiService = {
   async callGoogleAI(rawInput: string, systemPrompt?: string): Promise<AIResponseOutput> {
     return requestAndValidate(providers[0], rawInput, systemPrompt ?? buildSystemPrompt(false, false));
@@ -203,13 +227,30 @@ export const aiService = {
     return requestAndValidate(providers[1], rawInput, systemPrompt ?? buildSystemPrompt(false, false));
   },
 
-  async extractRevisions(rawInput: string, projectContext?: string): Promise<AIResponseOutput> {
-    const primary = providers[0];
-    const fallback = providers[1];
+  async extractRevisions(rawInput: string, projectContext?: string, byok?: ByokOptions): Promise<AIResponseOutput> {
     const useProjectContext = env.ENABLE_PROJECT_CONTEXT && projectContext !== undefined;
     const useLanguageMirroring = env.ENABLE_LANGUAGE_MIRRORING;
     const systemPrompt = buildSystemPrompt(useProjectContext, useLanguageMirroring);
     const userMessage = buildUserMessage(rawInput, useProjectContext ? projectContext : undefined);
+
+    if (byok) {
+      const byokProvider = createByokProvider(byok.provider, byok.apiKey);
+      try {
+        return await requestAndValidate(byokProvider, userMessage, systemPrompt);
+      } catch (error) {
+        const failure = error as ProviderFailure;
+        if (failure.status === 429) {
+          throw new AppError('BYOK_RATE_LIMITED', 'BYOK provider rate limited.', 429, { provider: byok.provider });
+        }
+        if (failure.status === 401 || failure.status === 403) {
+          throw new ByokAuthFailedError('Invalid BYOK credentials.', { provider: byok.provider });
+        }
+        throw new AppError('AI_PROCESSING_FAILED', 'Feedback could not be analyzed.', 422);
+      }
+    }
+
+    const primary = providers[0];
+    const fallback = providers[1];
 
     try {
       return await this.callGoogleAI(userMessage, systemPrompt);
@@ -224,6 +265,29 @@ export const aiService = {
       return await this.callOpenRouter(userMessage, systemPrompt);
     } catch {
       throw new AppError('AI_PROCESSING_FAILED', 'Feedback could not be analyzed.', 422);
+    }
+  },
+
+  async validateByokKey(provider: 'openrouter' | 'google', apiKey: string): Promise<{ valid: boolean; error?: string }> {
+    const byokProvider = createByokProvider(provider, apiKey);
+    const endpoint = `${byokProvider.baseURL.replace(/\/+$/, '')}/models`;
+    try {
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (response.ok) {
+        return { valid: true };
+      }
+      if (response.status === 401 || response.status === 403) {
+        return { valid: false, error: 'Invalid API key.' };
+      }
+      return { valid: false, error: `Provider returned HTTP ${response.status}.` };
+    } catch (error) {
+      return { valid: false, error: 'Unable to reach provider.' };
     }
   },
 };
