@@ -545,6 +545,16 @@ export default {
     completeConfirm:
       "MARK PROJECT AS COMPLETED? This closes the project. New revision batches cannot be submitted until reopened.",
     yesComplete: "YES, COMPLETE",
+    attachedDocuments: "Attached Documents",
+    docFailedLoad: "Failed to load documents.",
+    attachNewDocument: "Attach New Document",
+    docFileTooLarge: "File is too large. Maximum allowed size is {size}.",
+    docUnsupportedType: 'Unsupported file type ".{ext}". Allowed: .pdf, .docx, .md.',
+    docUploadFailed: "Upload failed.",
+    docDeleteFailed: "Delete failed.",
+    docStatusCompleted: "COMPLETED",
+    docStatusFailed: "FAILED",
+    docStatusPending: "PENDING",
     dangerZone: "DANGER ZONE",
     deleteProject: "DELETE PROJECT",
     deleteConfirmPlural:
