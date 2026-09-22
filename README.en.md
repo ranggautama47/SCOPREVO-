@@ -33,6 +33,7 @@ SCOPREVO transforms messy client feedback (WhatsApp chats, emails) into a struct
 
 ## 📌 Table of Contents
 
+- [Screenshots](#-screenshots)
 - [Problem](#problem)
 - [Solution](#solution)
 - [Why this, not a generic PM tool](#why-this-not-a-generic-pm-tool)
@@ -42,6 +43,43 @@ SCOPREVO transforms messy client feedback (WhatsApp chats, emails) into a struct
 - [Measuring impact (required for case study)](#measuring-impact-required-for-case-study)
 - [Platform & Tech Stack](#platform--tech-stack)
 - [Docs in this set](#docs-in-this-set)
+
+---
+
+## 📸 Screenshots
+
+<table>
+<tr>
+<td width="50%">
+
+**Dashboard**
+<img src="docs/screenshots/dashboard.png" alt="SCOPREVO Dashboard — active projects, revisions used, revisions remaining, and pending confirmations" width="100%" />
+
+</td>
+<td width="50%">
+
+**Projects**
+<img src="docs/screenshots/projects.png" alt="SCOPREVO project list page" width="100%" />
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**History**
+<img src="docs/screenshots/history.png" alt="SCOPREVO revision batch history page" width="100%" />
+
+</td>
+<td width="50%">
+
+**Settings**
+<img src="docs/screenshots/settings.png" alt="SCOPREVO settings page" width="100%" />
+
+</td>
+</tr>
+</table>
+
+> **Note:** the Dashboard screenshot above is real. The other three slots (Projects, History, Settings) are waiting on image files — see the instructions at the end of this response for how to fill them in.
 
 ---
 

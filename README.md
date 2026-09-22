@@ -33,6 +33,7 @@ SCOPREVO mengubah feedback klien yang berantakan (chat WhatsApp, email) menjadi 
 
 ## 📌 Daftar Isi
 
+- [Preview Aplikasi](#-preview-aplikasi)
 - [Masalah](#-masalah)
 - [Solusi](#-solusi)
 - [Kenapa ini, bukan PM tool generik](#-kenapa-ini-bukan-pm-tool-generik)
@@ -42,6 +43,43 @@ SCOPREVO mengubah feedback klien yang berantakan (chat WhatsApp, email) menjadi 
 - [Mengukur Dampak (wajib untuk case study)](#-mengukur-dampak-wajib-untuk-case-study)
 - [Platform & Tech Stack](#-platform--tech-stack)
 - [Dokumentasi dalam Set Ini](#-dokumentasi-dalam-set-ini)
+
+---
+
+## 📸 Preview Aplikasi
+
+<table>
+<tr>
+<td width="50%">
+
+**Dashboard**
+<img src="docs/screenshots/dashboard.png" alt="Dashboard SCOPREVO — ringkasan proyek aktif, revisi terpakai, revisi tersisa, dan konfirmasi tertunda" width="100%" />
+
+</td>
+<td width="50%">
+
+**Proyek**
+<img src="docs/screenshots/projects.png" alt="Halaman daftar proyek SCOPREVO" width="100%" />
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**Riwayat**
+<img src="docs/screenshots/history.png" alt="Halaman riwayat revision batch SCOPREVO" width="100%" />
+
+</td>
+<td width="50%">
+
+**Pengaturan**
+<img src="docs/screenshots/settings.png" alt="Halaman pengaturan SCOPREVO" width="100%" />
+
+</td>
+</tr>
+</table>
+
+> **Catatan:** screenshot Dashboard di atas sudah asli. Tiga slot lain (Proyek, Riwayat, Pengaturan) menunggu file gambar — lihat instruksi di bawah dokumen ini untuk cara mengisinya.
 
 ---
 
