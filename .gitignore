@@ -30,3 +30,4 @@ __pycache__/
 # Frontend Smoke Test Screenshots (Simpan lokal untuk artikel, jangan di Git)
 smoke_*.png
 smoke/kilo.json
+kilo.json
