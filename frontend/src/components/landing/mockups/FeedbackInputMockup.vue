@@ -3,7 +3,7 @@
   <div class="bg-[#FAFAF9] border-2 border-[#1A1A1A] rounded-none p-4 shadow-[4px_4px_0px_0px_#1A1A1A]">
     <p class="font-['Inter',sans-serif] text-[10px] uppercase tracking-wider text-[#1A1A1A]/50 mb-2">{{ t('landing.mockup.feedbackInput') }}</p>
     <textarea
-      class="w-full bg-[#FAFAF9] border-2 border-[#1A1A1A] rounded-none p-3 min-h-[100px] md:min-h-[140px] font-['Noto_Serif',serif] text-sm text-[#1A1A1A] resize-none focus:outline-none focus:ring-2 focus:ring-[#006D77]"
+      class="w-full bg-[#FAFAF9] border-2 border-[#1A1A1A] rounded-none p-3 min-h-[100px] md:min-h-[140px] font-['Noto_Serif',serif] text-sm text-[#1A1A1A] resize-none focus:outline-none focus:bg-[#FDFFB6] hover:bg-[#FDFFB6] focus:ring-2 focus:ring-[#006D77]"
       :placeholder="t('landing.mockup.feedbackPlaceholder')"
       :aria-label="t('landing.mockup.feedbackInputAria')"
     ></textarea>

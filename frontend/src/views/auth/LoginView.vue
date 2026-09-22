@@ -40,7 +40,7 @@ const resetToken = computed(() => (route.params.token as string) ?? "");
 async function handleLogin() {
   localError.value = null;
   if (!email.value || !password.value) {
-    localError.value = t('auth.login.validation.emailPasswordRequired');
+    localError.value = t("auth.login.validation.emailPasswordRequired");
     return;
   }
 
@@ -48,7 +48,7 @@ async function handleLogin() {
     await authStore.login(email.value, password.value);
     router.push("/dashboard");
   } catch (err: any) {
-    localError.value = err?.message || t('auth.login.validation.loginFailed');
+    localError.value = err?.message || t("auth.login.validation.loginFailed");
   }
 }
 
@@ -81,11 +81,11 @@ async function handleForgotPassword() {
     });
     forgotMessage.value =
       res.deliveredVia === "console"
-        ? t('auth.login.forgot.resetLinkGenerated')
-        : t('auth.login.forgot.resetLinkSent', { email: forgotEmail.value });
+        ? t("auth.login.forgot.resetLinkGenerated")
+        : t("auth.login.forgot.resetLinkSent", { email: forgotEmail.value });
   } catch (err: unknown) {
     forgotError.value =
-      err instanceof ApiError ? err.message : t('auth.login.forgot.failedSend');
+      err instanceof ApiError ? err.message : t("auth.login.forgot.failedSend");
   } finally {
     isSubmittingForgot.value = false;
   }
@@ -95,15 +95,15 @@ async function handleResetPassword() {
   resetError.value = null;
   resetMessage.value = null;
   if (newPassword.value.length < 8) {
-    resetError.value = t('auth.login.reset.passwordMinLength');
+    resetError.value = t("auth.login.reset.passwordMinLength");
     return;
   }
   if (newPassword.value.length > 72) {
-    resetError.value = t('auth.login.reset.passwordMaxLength');
+    resetError.value = t("auth.login.reset.passwordMaxLength");
     return;
   }
   if (newPassword.value !== confirmPassword.value) {
-    resetError.value = t('auth.login.reset.passwordsMismatch');
+    resetError.value = t("auth.login.reset.passwordsMismatch");
     return;
   }
   isSubmittingReset.value = true;
@@ -117,7 +117,7 @@ async function handleResetPassword() {
     confirmPassword.value = "";
   } catch (err: unknown) {
     resetError.value =
-      err instanceof ApiError ? err.message : t('auth.login.reset.failedReset');
+      err instanceof ApiError ? err.message : t("auth.login.reset.failedReset");
   } finally {
     isSubmittingReset.value = false;
   }
@@ -152,13 +152,13 @@ function backToLogin() {
             <h1
               class="font-editorial text-4xl font-normal leading-none tracking-tight text-[#1A1A1A]"
             >
-              {{ t('common.appName') }}
+              {{ t("common.appName") }}
             </h1>
           </div>
           <p
             class="font-body text-sm text-[#1A1A1A]/60 mt-2 text-center md:text-left"
           >
-            {{ t('common.tagline') }}
+            {{ t("common.tagline") }}
           </p>
         </div>
         <!-- Mobile Collage (visible only on < md) -->
@@ -183,7 +183,7 @@ function backToLogin() {
             <p
               class="font-mono text-[9px] uppercase tracking-wider text-[#1A1A1A] text-center font-bold mt-2"
             >
-              {{ t('auth.login.rightPanel.scopeControl') }}
+              {{ t("auth.login.rightPanel.scopeControl") }}
             </p>
           </div>
           <!-- Frame 2: Right (PORTRAIT SAFE) -->
@@ -204,7 +204,7 @@ function backToLogin() {
             <p
               class="font-mono text-[9px] uppercase tracking-wider text-[#1A1A1A] text-center font-bold mt-2"
             >
-              {{ t('auth.login.rightPanel.projectVault') }}
+              {{ t("auth.login.rightPanel.projectVault") }}
             </p>
           </div>
         </div>
@@ -217,19 +217,19 @@ function backToLogin() {
             <h2 class="font-editorial text-2xl">
               {{
                 mode === "login"
-                  ? t('auth.login.title')
+                  ? t("auth.login.title")
                   : mode === "request"
-                    ? t('auth.login.forgotPassword')
-                    : t('auth.login.resetPassword')
+                    ? t("auth.login.forgotPassword")
+                    : t("auth.login.resetPassword")
               }}
             </h2>
             <p class="font-body text-sm mt-1 opacity-70">
               {{
                 mode === "login"
-                  ? t('auth.login.description')
+                  ? t("auth.login.description")
                   : mode === "request"
-                    ? t('auth.login.descriptionRequest')
-                    : t('auth.login.descriptionReset')
+                    ? t("auth.login.descriptionRequest")
+                    : t("auth.login.descriptionReset")
               }}
             </p>
           </div>
@@ -244,7 +244,7 @@ function backToLogin() {
               <label
                 for="email"
                 class="block font-mono text-xs uppercase tracking-wider mb-1"
-                >{{ t('auth.login.emailLabel') }}</label
+                >{{ t("auth.login.emailLabel") }}</label
               >
               <input
                 id="email"
@@ -261,7 +261,7 @@ function backToLogin() {
               <label
                 for="password"
                 class="block font-mono text-xs uppercase tracking-wider mb-1"
-                >{{ t('auth.login.passwordLabel') }}</label
+                >{{ t("auth.login.passwordLabel") }}</label
               >
               <div class="relative">
                 <input
@@ -325,7 +325,11 @@ function backToLogin() {
               :disabled="authStore.isLoading"
               class="w-full bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-brutal hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] transition-all disabled:opacity-50 rounded-none"
             >
-              {{ authStore.isLoading ? t('auth.login.signingIn') : t('auth.login.signIn') }}
+              {{
+                authStore.isLoading
+                  ? t("auth.login.signingIn")
+                  : t("auth.login.signIn")
+              }}
             </button>
           </form>
 
@@ -339,7 +343,7 @@ function backToLogin() {
               <label
                 for="forgotEmail"
                 class="block font-mono text-xs uppercase tracking-wider mb-1"
-                >{{ t('auth.login.emailLabel') }}</label
+                >{{ t("auth.login.emailLabel") }}</label
               >
               <input
                 id="forgotEmail"
@@ -367,14 +371,18 @@ function backToLogin() {
               :disabled="isSubmittingForgot"
               class="w-full bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-brutal hover:-translate-x-1.5 hover:-translate-y-1.5 transition-all disabled:opacity-50 rounded-none"
             >
-              {{ isSubmittingForgot ? t('auth.login.sending') : t('auth.login.sendResetLink') }}
+              {{
+                isSubmittingForgot
+                  ? t("auth.login.sending")
+                  : t("auth.login.sendResetLink")
+              }}
             </button>
             <button
               type="button"
               @click="toggleForgotPassword"
               class="font-body text-sm text-[#1A1A1A]/70 cursor-pointer hover:underline hover:scale-105 transition-all"
             >
-              {{ t('auth.login.backToSignIn') }}
+              {{ t("auth.login.backToSignIn") }}
             </button>
           </form>
 
@@ -387,7 +395,7 @@ function backToLogin() {
               <label
                 for="newPassword"
                 class="block font-mono text-xs uppercase tracking-wider mb-1"
-                >{{ t('auth.login.newPasswordLabel') }}</label
+                >{{ t("auth.login.newPasswordLabel") }}</label
               >
               <input
                 id="newPassword"
@@ -402,7 +410,7 @@ function backToLogin() {
               <label
                 for="confirmPassword"
                 class="block font-mono text-xs uppercase tracking-wider mb-1"
-                >{{ t('auth.login.confirmPasswordLabel') }}</label
+                >{{ t("auth.login.confirmPasswordLabel") }}</label
               >
               <input
                 id="confirmPassword"
@@ -429,7 +437,7 @@ function backToLogin() {
                 @click="backToLogin"
                 class="underline font-semibold"
               >
-                {{ t('auth.login.signInNow') }}
+                {{ t("auth.login.signInNow") }}
               </button>
             </div>
             <button
@@ -437,14 +445,18 @@ function backToLogin() {
               :disabled="isSubmittingReset"
               class="w-full bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-brutal transition-all disabled:opacity-50 rounded-none"
             >
-              {{ isSubmittingReset ? t('auth.login.resetting') : t('auth.login.setNewPassword') }}
+              {{
+                isSubmittingReset
+                  ? t("auth.login.resetting")
+                  : t("auth.login.setNewPassword")
+              }}
             </button>
             <button
               type="button"
               @click="backToLogin"
               class="font-body text-sm text-[#1A1A1A]/70 cursor-pointer hover:underline"
             >
-              {{ t('auth.login.backToSignIn') }}
+              {{ t("auth.login.backToSignIn") }}
             </button>
           </form>
 
@@ -458,16 +470,16 @@ function backToLogin() {
                 @click="toggleForgotPassword"
                 class="font-ui text-[#006D77] underline underline-offset-4 decoration-2 font-semibold cursor-pointer hover:text-[#004d54] hover:scale-105 hover:-translate-x-1.5 transition-all"
               >
-                {{ t('auth.login.forgotPasswordLink') }}
+                {{ t("auth.login.forgotPasswordLink") }}
               </button>
             </p>
             <p class="font-body text-sm">
-              {{ t('auth.login.noAccount') }}
+              {{ t("auth.login.noAccount") }}
               <router-link
                 to="/register"
                 class="font-ui text-[#006D77] underline underline-offset-2 ml-1 font-semibold hover:scale-105 hover:-translate-x-1.5 transition-all"
               >
-                {{ t('auth.login.register') }}
+                {{ t("auth.login.register") }}
               </router-link>
             </p>
           </div>
@@ -482,11 +494,13 @@ function backToLogin() {
           <div
             class="font-mono text-xs uppercase tracking-widest text-[#1A1A1A]/70"
           >
-            {{ t('auth.login.rightPanel.systemAccess') }}
+            {{ t("auth.login.rightPanel.systemAccess") }}
           </div>
-          <h2 class="font-editorial text-2xl text-[#1A1A1A]">{{ t('auth.login.rightPanel.welcomeBack') }}</h2>
+          <h2 class="font-editorial text-2xl text-[#1A1A1A]">
+            {{ t("auth.login.rightPanel.welcomeBack") }}
+          </h2>
           <p class="font-body text-xs text-[#1A1A1A]/60">
-            {{ t('auth.login.rightPanel.secureWorkspace') }}
+            {{ t("auth.login.rightPanel.secureWorkspace") }}
           </p>
         </div>
 
@@ -511,7 +525,7 @@ function backToLogin() {
             <div
               class="mt-1.5 font-mono text-[9px] uppercase tracking-wider text-[#1A1A1A] text-center font-bold"
             >
-              {{ t('auth.login.rightPanel.scopeControl') }}
+              {{ t("auth.login.rightPanel.scopeControl") }}
             </div>
           </div>
 
@@ -532,7 +546,7 @@ function backToLogin() {
             <div
               class="mt-1.5 font-mono text-[9px] uppercase tracking-wider text-[#1A1A1A] text-center font-bold"
             >
-              {{ t('auth.login.rightPanel.projectVault') }}
+              {{ t("auth.login.rightPanel.projectVault") }}
             </div>
           </div>
 
@@ -553,7 +567,7 @@ function backToLogin() {
             <div
               class="mt-1.5 font-mono text-[9px] uppercase tracking-wider text-[#1A1A1A] text-center font-bold"
             >
-              {{ t('auth.login.rightPanel.intelligenceCore') }}
+              {{ t("auth.login.rightPanel.intelligenceCore") }}
             </div>
           </div>
 
@@ -574,7 +588,7 @@ function backToLogin() {
             <div
               class="mt-1.5 font-mono text-[9px] uppercase tracking-wider text-[#1A1A1A] text-center font-bold"
             >
-              {{ t('auth.login.rightPanel.scopeInspector') }}
+              {{ t("auth.login.rightPanel.scopeInspector") }}
             </div>
           </div>
         </div>
@@ -593,9 +607,11 @@ function backToLogin() {
             <span
               class="font-mono text-[10px] uppercase tracking-wider text-[#1A1A1A] font-bold"
             >
-              {{ t('auth.login.rightPanel.craftedBy') }}
-              <span class="text-[#006D77] underline decoration-2 underline-offset-4 decoration-[#006D77]">
-                {{ t('common.appName') }}
+              {{ t("auth.login.rightPanel.craftedBy") }}
+              <span
+                class="text-[#006D77] underline decoration-2 underline-offset-4 decoration-[#006D77]"
+              >
+                {{ t("common.appName") }}
               </span>
             </span>
           </div>

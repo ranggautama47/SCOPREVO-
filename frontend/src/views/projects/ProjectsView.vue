@@ -565,7 +565,7 @@ onMounted(() => {
               type="text"
               required
               class="bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-3 font-['Noto_Serif',serif] text-base rounded-none w-full outline-none focus:bg-[#FDFFB6] focus:outline-none placeholder:text-[#1A1A1A]/40"
-              :placeholder="t('projects.clientNamePlaceholder')"
+              :placeholder="t('modals.clientNamePlaceholder')"
             />
           </div>
 
