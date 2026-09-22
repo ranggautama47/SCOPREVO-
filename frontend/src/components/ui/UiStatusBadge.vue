@@ -27,7 +27,7 @@ const colorClass = computed(() => {
       case "IN_SCOPE":
         return "bg-[#DCFCE7] text-[#166534]";
       case "OUT_OF_SCOPE":
-        return "bg-[#FEE2E2] text-[#991B1B]";
+        return "bg-[#FEE2E2] text-[#991B1B]";  
       case "NEEDS_REVIEW":
         return "bg-[#FDFFB6] text-[#92400E]";
       default:
