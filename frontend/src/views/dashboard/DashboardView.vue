@@ -427,12 +427,16 @@ onMounted(() => {
                 <span
                   class="inline-flex items-center gap-1 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-1.5 py-0.5 font-['JetBrains_Mono',monospace] text-[10px] font-bold rounded-none"
                   :class="
-                    (project.documentCount ?? 0) === 0 ? 'opacity-40' : ''
+                    (project.documents?.length ??
+                      project.documentCount ??
+                      0) === 0
+                      ? 'opacity-40'
+                      : ''
                   "
                   :title="t('dashboard.attachedDocuments')"
                 >
                   <FileText class="w-3 h-3" />
-                  {{ project.documentCount ?? 0 }}
+                  {{ project.documents?.length ?? project.documentCount ?? 0 }}
                 </span>
               </div>
             </div>

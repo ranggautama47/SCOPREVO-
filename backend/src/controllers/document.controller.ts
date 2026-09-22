@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import multer, { memoryStorage } from 'multer';
 import { documentService, DocumentResponse } from '../services/document.service';
 import { AppError } from '../middleware/error.middleware';
+import { cacheService } from '../services/cache.service';
 
 const MAX_FILE_SIZE = 2097152;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -93,6 +94,11 @@ export const documentController = {
             },
           })
           .then((doc) => {
+            cacheService.del([
+              cacheService.buildKey(accountId, 'project', projectId),
+              cacheService.buildKey(accountId, 'projects'),
+              cacheService.buildKey(accountId, 'overview'),
+            ], accountId);
             res.status(201).json({ document: toResponse(doc) });
           })
           .catch(next);
@@ -108,6 +114,11 @@ export const documentController = {
       const projectId = validateProjectId(req, res, next);
       const documentId = validateDocumentId(req, res, next);
       await documentService.deleteDocument(projectId, documentId, accountId);
+      cacheService.del([
+        cacheService.buildKey(accountId, 'project', projectId),
+        cacheService.buildKey(accountId, 'projects'),
+        cacheService.buildKey(accountId, 'overview'),
+      ], accountId);
       res.status(204).send();
     } catch (err) {
       next(err);

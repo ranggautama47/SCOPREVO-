@@ -415,14 +415,19 @@ onMounted(() => {
                     : t("projects.statusActive")
                 }}
               </span>
-              <!-- Document Indicator (hanya muncul jika ada dokumen) -->
+              <!-- Document Indicator -->
               <span
                 class="inline-flex items-center gap-1.5 bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-2 py-0.5 font-['JetBrains_Mono',monospace] text-[10px] font-bold rounded-none"
-                :class="(project.documentCount ?? 0) === 0 ? 'opacity-40' : ''"
+                :class="
+                  (project.documents?.length ?? project.documentCount ?? 0) ===
+                  0
+                    ? 'opacity-40'
+                    : ''
+                "
                 :title="t('projects.attachedDocumentsTitle')"
               >
                 <FileText class="w-3.5 h-3.5" />
-                {{ project.documentCount ?? 0 }}
+                {{ project.documents?.length ?? project.documentCount ?? 0 }}
               </span>
             </div>
           </div>

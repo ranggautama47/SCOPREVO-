@@ -16,6 +16,7 @@ export interface ProjectDTO {
   totalAllowedRevisions: number;
   usedRevisions: number;
   remainingRevisions: number;
+  documentCount: number;
   status: ProjectStatus;
   createdAt: Date;
 }
@@ -32,6 +33,7 @@ function toDTO(row: ProjectWithQuota): ProjectDTO {
     totalAllowedRevisions: row.total_allowed_revisions,
     usedRevisions: row.used_revisions,
     remainingRevisions: row.remaining_revisions,
+    documentCount: row.document_count ?? 0,
     status: row.status,
     createdAt: row.created_at,
   };
@@ -49,17 +51,18 @@ export const projectService = {
     // Invalidate affected caches: projects list and overview
     await cacheService.invalidateAccountResources(accountId, ['projects', 'overview']);
 
-    return {
-      id: row.id,
-      accountId: row.account_id,
-      name: row.name,
-      clientName: row.client_name,
-      totalAllowedRevisions: row.total_allowed_revisions,
-      usedRevisions: 0,
-      remainingRevisions: row.total_allowed_revisions,
-      status: row.status,
-      createdAt: row.created_at,
-    };
+return {
+       id: row.id,
+       accountId: row.account_id,
+       name: row.name,
+       clientName: row.client_name,
+       totalAllowedRevisions: row.total_allowed_revisions,
+       usedRevisions: 0,
+       remainingRevisions: row.total_allowed_revisions,
+       documentCount: 0,
+       status: row.status,
+       createdAt: row.created_at,
+     };
   },
 
   async listProjects(accountId: string): Promise<ProjectDTO[]> {

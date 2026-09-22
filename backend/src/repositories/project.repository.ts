@@ -4,26 +4,29 @@ import { ProjectRow, ProjectStatus } from '../types/db.types';
 export interface ProjectWithQuota extends ProjectRow {
   used_revisions: number;
   remaining_revisions: number;
+  document_count: number;
 }
 export const projectRepository = {
-  async findAllByAccountId(accountId: string): Promise<ProjectWithQuota[]> {
+async findAllByAccountId(accountId: string): Promise<ProjectWithQuota[]> {
     const result = await db.query<ProjectWithQuota>(
-`SELECT
-         p.id, p.account_id, p.name, p.client_name, p.total_allowed_revisions, p.status, p.created_at,
-         COALESCE((SELECT COUNT(*)::int FROM revision_batch rb WHERE rb.project_id = p.id AND rb.status = 'APPROVED'), 0) AS used_revisions,
-         p.total_allowed_revisions - COALESCE((SELECT COUNT(*)::int FROM revision_batch rb WHERE rb.project_id = p.id AND rb.status = 'APPROVED'), 0) AS remaining_revisions
-       FROM project p WHERE p.account_id = $1 ORDER BY p.created_at DESC`,
+ `SELECT
+          p.id, p.account_id, p.name, p.client_name, p.total_allowed_revisions, p.status, p.created_at,
+          COALESCE((SELECT COUNT(*)::int FROM revision_batch rb WHERE rb.project_id = p.id AND rb.status = 'APPROVED'), 0) AS used_revisions,
+          p.total_allowed_revisions - COALESCE((SELECT COUNT(*)::int FROM revision_batch rb WHERE rb.project_id = p.id AND rb.status = 'APPROVED'), 0) AS remaining_revisions,
+          COALESCE((SELECT COUNT(*)::int FROM project_document pd WHERE pd.project_id = p.id), 0) AS document_count
+        FROM project p WHERE p.account_id = $1 ORDER BY p.created_at DESC`,
       [accountId],
     );
     return result.rows;
   },
   async findById(projectId: string): Promise<ProjectWithQuota | null> {
     const result = await db.query<ProjectWithQuota>(
-`SELECT
-         p.id, p.account_id, p.name, p.client_name, p.total_allowed_revisions, p.status, p.created_at,
-         COALESCE((SELECT COUNT(*)::int FROM revision_batch rb WHERE rb.project_id = p.id AND rb.status = 'APPROVED'), 0) AS used_revisions,
-         p.total_allowed_revisions - COALESCE((SELECT COUNT(*)::int FROM revision_batch rb WHERE rb.project_id = p.id AND rb.status = 'APPROVED'), 0) AS remaining_revisions
-       FROM project p WHERE p.id = $1 LIMIT 1`,
+ `SELECT
+          p.id, p.account_id, p.name, p.client_name, p.total_allowed_revisions, p.status, p.created_at,
+          COALESCE((SELECT COUNT(*)::int FROM revision_batch rb WHERE rb.project_id = p.id AND rb.status = 'APPROVED'), 0) AS used_revisions,
+          p.total_allowed_revisions - COALESCE((SELECT COUNT(*)::int FROM revision_batch rb WHERE rb.project_id = p.id AND rb.status = 'APPROVED'), 0) AS remaining_revisions,
+          COALESCE((SELECT COUNT(*)::int FROM project_document pd WHERE pd.project_id = p.id), 0) AS document_count
+        FROM project p WHERE p.id = $1 LIMIT 1`,
       [projectId],
     );
     return result.rows[0] ?? null;
