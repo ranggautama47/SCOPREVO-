@@ -192,8 +192,8 @@ watch(
 
         <hr class="border-b-2 border-[#1A1A1A] my-6" />
 
-        <div v-if="batchData.scopeReviewPending" class="mb-8 border-2 border-[#1A1A1A] bg-[#FDFFB6] p-4 font-body text-sm text-[#1A1A1A]">
-          Scope review is still pending for {{ batchData.hiddenItemsCount }} item(s). The freelancer is clarifying the remaining scope items. You can confirm after all items are reviewed.
+<div v-if="batchData.scopeReviewPending" class="mb-8 border-2 border-[#1A1A1A] bg-[#FDFFB6] p-4 font-body text-sm text-[#1A1A1A]">
+          {{ t('portal.scopeReviewPending', { count: batchData.hiddenItemsCount }) }}
         </div>
 
         <!-- Metadata Grid -->

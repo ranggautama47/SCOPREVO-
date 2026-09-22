@@ -527,6 +527,7 @@ export default {
     resolutionSuccess: "Scope updated successfully.",
     unresolvedItems: "Unresolved items",
     resolveBeforeSharing: "Resolve all NEEDS REVIEW items before sharing.",
+    resolveWhilePending: "Client confirmation is blocked until every NEEDS_REVIEW item is resolved.",
     errUnresolvedScopeItems: "Resolve all NEEDS REVIEW items before sharing.",
     errInvalidState: "Batch is not in DRAFT status.",
     errNotFound: "Item not found or access denied.",
@@ -671,8 +672,10 @@ export default {
     notApplicable: "N/A",
     itemLabel: "ITEM",
     ready: "ready",
-    copyright: "© {year} SCOPREVO • ALL RIGHTS RESERVED",
+    copyright: "SCOPREVO • ALL RIGHTS RESERVED",
     clientPortalFooter: "SCOPREVO CLIENT PORTAL",
+    scopeReviewPending:
+      "Scope review is still pending for {count} item(s). The freelancer is clarifying the remaining scope items. You can confirm after all items are reviewed."
   },
   notFound: {
     code: "404",

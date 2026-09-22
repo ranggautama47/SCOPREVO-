@@ -37,8 +37,9 @@ const shareError = ref<string | null>(null);
 const copyState = ref<"idle" | "copied" | "failed">("idle");
 
 // Resolution state
-const resolvingItemIds = ref(new Set<string>());
-const resolutionErrors = ref<Record<string, string | undefined>>({});
+const resolvingItemId = ref<string | null>(null);
+const resolutionError = ref<string | null>(null);
+const resolutionErrorItemId = ref<string | null>(null);
 const showOutOfScopeReason = ref<Record<string, boolean>>({});
 const outOfScopeReasonInput = ref<Record<string, string>>({});
 
@@ -229,9 +230,10 @@ async function handleResolveItem(
   scopeStatus: "IN_SCOPE" | "OUT_OF_SCOPE",
   reason?: string,
 ) {
-  if (!batchData.value || resolvingItemIds.value.has(itemId)) return;
-  resolvingItemIds.value.add(itemId);
-  delete resolutionErrors.value[itemId];
+  if (!batchData.value || resolvingItemId.value) return;
+  resolvingItemId.value = itemId;
+  resolutionError.value = null;
+  resolutionErrorItemId.value = null;
 
   const requestData: ResolveItemScopeRequest = {
     scopeStatus,
@@ -252,28 +254,38 @@ async function handleResolveItem(
       batchData.value.items[itemIndex] = res.item;
     }
 
+    if (batchData.value.status === "PENDING_CONFIRMATION") {
+      await fetchBatchDetail(batchId.value);
+    }
+
     // Close out-of-scope reason input if open
     showOutOfScopeReason.value[itemId] = false;
     outOfScopeReasonInput.value[itemId] = "";
   } catch (err: unknown) {
     if (err instanceof ApiError) {
       if (err.code === "VALIDATION_ERROR" || err.code === "UNRESOLVED_SCOPE_ITEMS") {
-        resolutionErrors.value[itemId] = err.message;
+        resolutionError.value = err.message;
+        resolutionErrorItemId.value = itemId;
       } else if (err.code === "INVALID_STATE" || err.status === 409) {
-        resolutionErrors.value[itemId] = err.message || t("batch.errInvalidState");
+        resolutionError.value = err.message || t("batch.errInvalidState");
+        resolutionErrorItemId.value = itemId;
         await fetchBatchDetail(batchId.value);
       } else if (err.code === "NOT_FOUND" || err.status === 404) {
-        resolutionErrors.value[itemId] = t("batch.errNotFound");
+        resolutionError.value = t("batch.errNotFound");
+        resolutionErrorItemId.value = itemId;
       } else if (err.status && err.status >= 500) {
-        resolutionErrors.value[itemId] = t("batch.errServer");
+        resolutionError.value = t("batch.errServer");
+        resolutionErrorItemId.value = itemId;
       } else {
-        resolutionErrors.value[itemId] = t("batch.errUnexpectedResolution");
+        resolutionError.value = t("batch.errUnexpectedResolution");
+        resolutionErrorItemId.value = itemId;
       }
     } else {
-      resolutionErrors.value[itemId] = t("batch.errUnexpectedResolution");
+      resolutionError.value = t("batch.errUnexpectedResolution");
+      resolutionErrorItemId.value = itemId;
     }
   } finally {
-    resolvingItemIds.value.delete(itemId);
+    resolvingItemId.value = null;
   }
 }
 
@@ -284,7 +296,8 @@ function handleMarkInScope(itemId: string) {
 function handleMarkOutOfScope(itemId: string) {
   const reason = outOfScopeReasonInput.value[itemId]?.trim();
   if (!reason) {
-    resolutionErrors.value[itemId] = t("batch.reasonRequired");
+    resolutionError.value = t("batch.reasonRequired");
+    resolutionErrorItemId.value = itemId;
     return;
   }
   handleResolveItem(itemId, "OUT_OF_SCOPE", reason);
@@ -295,7 +308,8 @@ function toggleOutOfScopeReason(itemId: string) {
   if (!showOutOfScopeReason.value[itemId]) {
     outOfScopeReasonInput.value[itemId] = "";
   }
-  delete resolutionErrors.value[itemId];
+  resolutionError.value = null;
+  resolutionErrorItemId.value = null;
 }
 
 // Fungsi copy fleksibel (Bisa dipanggil dari modal maupun tombol di kanan bawah)
@@ -539,23 +553,23 @@ watch(
             <div
               v-if="
                 batchData &&
-                batchData.status === 'DRAFT' &&
+                (batchData.status === 'DRAFT' || batchData.status === 'PENDING_CONFIRMATION') &&
                 item.scopeStatus === 'NEEDS_REVIEW'
               "
               class="mt-4 pt-4 border-t-2 border-[#1A1A1A]/10 space-y-3"
             >
               <p class="font-mono text-[10px] uppercase tracking-widest text-[#1A1A1A]/50">
-                {{ t("batch.resolveBeforeSharing") }}
+                {{ batchData.status === 'DRAFT' ? t('batch.resolveBeforeSharing') : t('batch.resolveWhilePending') }}
               </p>
 
               <div class="flex flex-wrap items-center gap-3">
                 <!-- MARK IN SCOPE -->
                 <button
                   @click="handleMarkInScope(item.id)"
-                  :disabled="resolvingItemIds.has(item.id)"
+                  :disabled="resolvingItemId === item.id"
                   class="bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-ui text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 cursor-pointer flex items-center gap-2"
                 >
-                  <span v-if="resolvingItemIds.has(item.id)" class="animate-pulse">■</span>
+                  <span v-if="resolvingItemId === item.id" class="animate-pulse">■</span>
                   {{ t("batch.markInScope") }}
                 </button>
 
@@ -563,10 +577,10 @@ watch(
                 <div class="flex items-center gap-2">
                   <button
                     @click="toggleOutOfScopeReason(item.id)"
-                    :disabled="resolvingItemIds.has(item.id)"
+                    :disabled="resolvingItemId === item.id"
                     class="bg-[#FEE2E2] text-[#991B1B] border-2 border-[#1A1A1A] px-4 py-2 font-ui text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 cursor-pointer flex items-center gap-2"
                   >
-                    <span v-if="resolvingItemIds.has(item.id)" class="animate-pulse">■</span>
+                    <span v-if="resolvingItemId === item.id" class="animate-pulse">■</span>
                     {{ t("batch.markOutOfScope") }}
                   </button>
 
@@ -585,14 +599,14 @@ watch(
                     />
                     <button
                       @click="handleMarkOutOfScope(item.id)"
-                      :disabled="resolvingItemIds.has(item.id)"
+                      :disabled="resolvingItemId === item.id"
                       class="bg-[#991B1B] text-[#FAFAF9] border-2 border-[#1A1A1A] px-3 py-2 font-ui text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 cursor-pointer flex items-center gap-2"
                     >
                       {{ t("common.save") }}
                     </button>
                     <button
                       @click="toggleOutOfScopeReason(item.id)"
-                      :disabled="resolvingItemIds.has(item.id)"
+                      :disabled="resolvingItemId === item.id"
                       class="bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-3 py-2 font-ui text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 cursor-pointer"
                     >
                       {{ t("common.cancel") }}
@@ -603,11 +617,11 @@ watch(
 
               <!-- Resolution error message -->
               <div
-                v-if="resolutionErrors[item.id]"
+                v-if="resolutionError && resolutionErrorItemId === item.id"
                 class="border-2 border-[#E63946] bg-[#FEE2E2] p-3 rounded-none shadow-[2px_2px_0px_0px_#1A1A1A]"
               >
                 <p class="font-ui text-xs uppercase text-[#991B1B] mb-1 font-bold">
-                  {{ resolutionErrors[item.id] }}
+                  {{ resolutionError }}
                 </p>
               </div>
             </div>

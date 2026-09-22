@@ -26,6 +26,7 @@ export interface Project {
   createdAt: string;
   status: 'ACTIVE' | 'COMPLETED';
   documentCount?: number;
+  documents?: ProjectDocument[];
 }
 
 export interface RevisionItem {
