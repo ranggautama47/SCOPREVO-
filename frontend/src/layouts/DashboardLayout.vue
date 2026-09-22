@@ -78,7 +78,7 @@ function isActive(path: string): boolean {
             <img
               src="/asset/logo.png"
               :alt="t('shell.sidebar.logoAlt')"
-              class="w-10 h-10 object-contain border-2 border-nearBlack bg-white p-1 rounded-none shadow-[2px_2px_0px_0px_#1A1A1A] select-none"
+              class="w-11 h-11 object-contain border-2 border-nearBlack rounded-none shadow-[2px_2px_0px_0px_#1A1A1A] select-none shrink-0"
               draggable="false"
             />
             <div>

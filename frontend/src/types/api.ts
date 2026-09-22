@@ -95,6 +95,22 @@ export interface OverviewData {
     createdAt: string;
     itemCount: number;
   }[];
+  actionableCount: number;
+  actionableBatches: {
+    id: string;
+    projectId: string;
+    projectName: string;
+    status: "DRAFT" | "PENDING_CONFIRMATION";
+    createdAt: string;
+    itemCount: number;
+  }[];
+  recentApprovedBatches: {
+    id: string;
+    projectId: string;
+    projectName: string;
+    createdAt: string;
+    itemCount: number;
+  }[];
 }
 
 export interface ApiErrorResponse {

@@ -272,6 +272,7 @@ export default {
   shell: {
     topbar: {
       notifications: "Notifications",
+      dismissNotification: "DISMISS NOTIFICATION",
       userProfile: "User Profile",
       noPendingConfirmations: "No pending confirmations",
       pendingConfirmation: "{count} pending confirmation",
@@ -284,6 +285,11 @@ export default {
       itemCountPlural: "{count} items",
       noActivity: "No recent activity yet.",
       viewActivityHistory: "VIEW ACTIVITY HISTORY",
+      actionNeeded: "ACTION NEEDED",
+      recentlyApproved: "RECENTLY APPROVED",
+      more: "MORE",
+      noOpenWork: "NO OPEN WORK",
+      noRecentApprovals: "NO RECENT APPROVALS",
     },
     sidebar: {
       dashboard: "DASHBOARD",

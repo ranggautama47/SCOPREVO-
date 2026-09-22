@@ -277,6 +277,7 @@ workspaceDefaults: {
   shell: {
     topbar: {
       notifications: "Notifikasi",
+      dismissNotification: "HAPUS NOTIFIKASI",
       userProfile: "Profil Pengguna",
       noPendingConfirmations: "Tidak ada konfirmasi tertunda",
       pendingConfirmation: "{count} konfirmasi tertunda",
@@ -289,6 +290,11 @@ workspaceDefaults: {
       itemCountPlural: "{count} item",
       noActivity: "Belum ada aktivitas.",
       viewActivityHistory: "LIHAT RIWAYAT AKTIVITAS",
+      actionNeeded: "PERLU TINDAKAN",
+      recentlyApproved: "BARU DISETUJUI",
+      more: "LEBIH BANYAK",
+      noOpenWork: "TIDAK ADA PEKERJAAN TERBUKA",
+      noRecentApprovals: "BELUM ADA PERSETUJUAN TERBARU",
     },
     sidebar: {
       dashboard: "DASHBOARD",
