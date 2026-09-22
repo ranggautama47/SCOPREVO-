@@ -33,6 +33,13 @@ interface PortalBatchDetail {
   project: PortalBatchProject;
 }
 
+export interface PortalBatchResponse {
+  batch: PortalBatchDetail;
+  unresolvedCount: number;
+  hiddenItemsCount: number;
+  scopeReviewPending: boolean;
+}
+
 function toPortalBatchItem(item: RevisionItemRow): PortalBatchItem {
   return {
     id: item.id,
@@ -64,7 +71,7 @@ function isUuid(value: string): boolean {
 }
 
 export const portalService = {
-  async getBatchByToken(magicToken: string): Promise<PortalBatchDetail> {
+  async getBatchByToken(magicToken: string): Promise<PortalBatchResponse> {
     if (!isUuid(magicToken)) {
       throw new NotFoundError('Revision batch not found.');
     }
@@ -78,16 +85,23 @@ export const portalService = {
     }
 
     const items = await revisionItemRepository.findAllByBatchId(batch.id);
+    const unresolvedCount = items.filter((item) => item.scope_status === 'NEEDS_REVIEW').length;
+    const visibleItems = items.filter((item) => item.scope_status !== 'NEEDS_REVIEW');
     const project = await getProjectWithQuota(batch.project_id);
 
     return {
-      id: batch.id,
-      projectId: batch.project_id,
-      status: batch.status,
-      summary: batch.ai_summary ?? '',
-      createdAt: batch.created_at.toISOString(),
-      items: items.map(toPortalBatchItem),
-      project,
+      batch: {
+        id: batch.id,
+        projectId: batch.project_id,
+        status: batch.status,
+        summary: batch.ai_summary ?? '',
+        createdAt: batch.created_at.toISOString(),
+        items: visibleItems.map(toPortalBatchItem),
+        project,
+      },
+      unresolvedCount,
+      hiddenItemsCount: unresolvedCount,
+      scopeReviewPending: unresolvedCount > 0,
     };
   },
 

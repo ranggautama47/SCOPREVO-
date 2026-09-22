@@ -7,11 +7,13 @@ import type {
   RevisionBatchStatus,
   ScopeStatus,
   ShareBatchResponse,
+  ResolveItemScopeRequest,
+  ResolveItemScopeResponse,
 } from "../../types/api";
 import { useAuthStore } from "../../stores/auth";
 import { swrService } from "../../services/resilience/swr.service";
 import { useI18n } from "../../composables/useI18n";
-import { Link2, Copy, ExternalLink, RefreshCw } from "lucide-vue-next";
+import { Link2, Copy, ExternalLink, RefreshCw, AlertCircle } from "lucide-vue-next";
 import { trackEvent } from "../../services/analytics";
 
 const { t, locale } = useI18n();
@@ -33,6 +35,12 @@ const showModal = ref(false);
 const portalUrl = ref("");
 const shareError = ref<string | null>(null);
 const copyState = ref<"idle" | "copied" | "failed">("idle");
+
+// Resolution state
+const resolvingItemIds = ref(new Set<string>());
+const resolutionErrors = ref<Record<string, string | undefined>>({});
+const showOutOfScopeReason = ref<Record<string, boolean>>({});
+const outOfScopeReasonInput = ref<Record<string, string>>({});
 
 // Prefer the token returned with the batch, while retaining a generated link
 // from handleShare() for older/detail responses that omit magicToken.
@@ -170,6 +178,13 @@ const outOfScopeCount = computed(() => {
   ).length;
 });
 
+const unresolvedNeedsReviewCount = computed(() => {
+  if (!batchData.value?.items) return 0;
+  return batchData.value.items.filter(
+    (item) => item.scopeStatus === "NEEDS_REVIEW",
+  ).length;
+});
+
 async function handleShare() {
   if (!batchData.value || isSharing.value) return;
   isSharing.value = true;
@@ -207,6 +222,80 @@ async function handleShare() {
   } finally {
     isSharing.value = false;
   }
+}
+
+async function handleResolveItem(
+  itemId: string,
+  scopeStatus: "IN_SCOPE" | "OUT_OF_SCOPE",
+  reason?: string,
+) {
+  if (!batchData.value || resolvingItemIds.value.has(itemId)) return;
+  resolvingItemIds.value.add(itemId);
+  delete resolutionErrors.value[itemId];
+
+  const requestData: ResolveItemScopeRequest = {
+    scopeStatus,
+    ...(reason ? { reason } : {}),
+  };
+
+  try {
+    const res: ResolveItemScopeResponse = await apiClient.batches.resolveScopeItem(
+      batchId.value,
+      itemId,
+      requestData,
+    );
+    trackEvent("resolve_scope_item", { scopeStatus });
+
+    // Update local item state
+    const itemIndex = batchData.value.items.findIndex((i) => i.id === itemId);
+    if (itemIndex !== -1) {
+      batchData.value.items[itemIndex] = res.item;
+    }
+
+    // Close out-of-scope reason input if open
+    showOutOfScopeReason.value[itemId] = false;
+    outOfScopeReasonInput.value[itemId] = "";
+  } catch (err: unknown) {
+    if (err instanceof ApiError) {
+      if (err.code === "VALIDATION_ERROR" || err.code === "UNRESOLVED_SCOPE_ITEMS") {
+        resolutionErrors.value[itemId] = err.message;
+      } else if (err.code === "INVALID_STATE" || err.status === 409) {
+        resolutionErrors.value[itemId] = err.message || t("batch.errInvalidState");
+        await fetchBatchDetail(batchId.value);
+      } else if (err.code === "NOT_FOUND" || err.status === 404) {
+        resolutionErrors.value[itemId] = t("batch.errNotFound");
+      } else if (err.status && err.status >= 500) {
+        resolutionErrors.value[itemId] = t("batch.errServer");
+      } else {
+        resolutionErrors.value[itemId] = t("batch.errUnexpectedResolution");
+      }
+    } else {
+      resolutionErrors.value[itemId] = t("batch.errUnexpectedResolution");
+    }
+  } finally {
+    resolvingItemIds.value.delete(itemId);
+  }
+}
+
+function handleMarkInScope(itemId: string) {
+  handleResolveItem(itemId, "IN_SCOPE");
+}
+
+function handleMarkOutOfScope(itemId: string) {
+  const reason = outOfScopeReasonInput.value[itemId]?.trim();
+  if (!reason) {
+    resolutionErrors.value[itemId] = t("batch.reasonRequired");
+    return;
+  }
+  handleResolveItem(itemId, "OUT_OF_SCOPE", reason);
+}
+
+function toggleOutOfScopeReason(itemId: string) {
+  showOutOfScopeReason.value[itemId] = !showOutOfScopeReason.value[itemId];
+  if (!showOutOfScopeReason.value[itemId]) {
+    outOfScopeReasonInput.value[itemId] = "";
+  }
+  delete resolutionErrors.value[itemId];
 }
 
 // Fungsi copy fleksibel (Bisa dipanggil dari modal maupun tombol di kanan bawah)
@@ -421,7 +510,12 @@ watch(
 
             <!-- Item Description -->
             <p
-              class="font-body text-base text-[#1A1A1A] leading-[1.6] whitespace-pre-line font-medium"
+              :class="[
+                'font-body text-base leading-[1.6] whitespace-pre-line font-medium',
+                item.scopeStatus === 'OUT_OF_SCOPE'
+                  ? 'text-[#1A1A1A]/60 line-through decoration-[#1A1A1A]/60'
+                  : 'text-[#1A1A1A]',
+              ]"
             >
               {{ item.description }}
             </p>
@@ -439,6 +533,83 @@ watch(
                 >
                 <span class="italic">{{ item.reason }}</span>
               </p>
+            </div>
+
+            <!-- Resolution Actions for NEEDS_REVIEW items in DRAFT batches -->
+            <div
+              v-if="
+                batchData &&
+                batchData.status === 'DRAFT' &&
+                item.scopeStatus === 'NEEDS_REVIEW'
+              "
+              class="mt-4 pt-4 border-t-2 border-[#1A1A1A]/10 space-y-3"
+            >
+              <p class="font-mono text-[10px] uppercase tracking-widest text-[#1A1A1A]/50">
+                {{ t("batch.resolveBeforeSharing") }}
+              </p>
+
+              <div class="flex flex-wrap items-center gap-3">
+                <!-- MARK IN SCOPE -->
+                <button
+                  @click="handleMarkInScope(item.id)"
+                  :disabled="resolvingItemIds.has(item.id)"
+                  class="bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-ui text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                >
+                  <span v-if="resolvingItemIds.has(item.id)" class="animate-pulse">■</span>
+                  {{ t("batch.markInScope") }}
+                </button>
+
+                <!-- MARK OUT OF SCOPE -->
+                <div class="flex items-center gap-2">
+                  <button
+                    @click="toggleOutOfScopeReason(item.id)"
+                    :disabled="resolvingItemIds.has(item.id)"
+                    class="bg-[#FEE2E2] text-[#991B1B] border-2 border-[#1A1A1A] px-4 py-2 font-ui text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                  >
+                    <span v-if="resolvingItemIds.has(item.id)" class="animate-pulse">■</span>
+                    {{ t("batch.markOutOfScope") }}
+                  </button>
+
+                  <!-- Inline reason input when toggled -->
+                  <div
+                    v-if="showOutOfScopeReason[item.id]"
+                    class="flex items-center gap-2"
+                  >
+                    <input
+                      type="text"
+                      v-model="outOfScopeReasonInput[item.id]"
+                      @keyup.enter="handleMarkOutOfScope(item.id)"
+                      :placeholder="t('batch.reasonPlaceholder')"
+                      class="bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-3 py-2 font-mono text-xs w-64 rounded-none outline-none"
+                      autofocus
+                    />
+                    <button
+                      @click="handleMarkOutOfScope(item.id)"
+                      :disabled="resolvingItemIds.has(item.id)"
+                      class="bg-[#991B1B] text-[#FAFAF9] border-2 border-[#1A1A1A] px-3 py-2 font-ui text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 cursor-pointer flex items-center gap-2"
+                    >
+                      {{ t("common.save") }}
+                    </button>
+                    <button
+                      @click="toggleOutOfScopeReason(item.id)"
+                      :disabled="resolvingItemIds.has(item.id)"
+                      class="bg-[#FAFAF9] text-[#1A1A1A] border-2 border-[#1A1A1A] px-3 py-2 font-ui text-xs font-semibold uppercase tracking-wide shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none disabled:opacity-50 cursor-pointer"
+                    >
+                      {{ t("common.cancel") }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Resolution error message -->
+              <div
+                v-if="resolutionErrors[item.id]"
+                class="border-2 border-[#E63946] bg-[#FEE2E2] p-3 rounded-none shadow-[2px_2px_0px_0px_#1A1A1A]"
+              >
+                <p class="font-ui text-xs uppercase text-[#991B1B] mb-1 font-bold">
+                  {{ resolutionErrors[item.id] }}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -475,19 +646,31 @@ watch(
         <!-- Action Buttons Kanan -->
         <div class="flex items-center gap-3">
           <!-- 1. DRAFT → TOMBOL GENERATE MAGIC LINK -->
-          <button
-            v-if="batchData.status === 'DRAFT'"
-            @click="handleShare"
-            :disabled="isSharing"
-            class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 cursor-pointer flex items-center gap-2"
-          >
-            <Link2 :size="16" :stroke-width="2" class="shrink-0" />
-            <span>{{
-              isSharing
-                ? t("batch.generatingLink")
-                : t("batch.generateMagicLink")
-            }}</span>
-          </button>
+          <div v-if="batchData.status === 'DRAFT'" class="flex flex-col gap-2">
+            <!-- Unresolved items warning -->
+            <div
+              v-if="unresolvedNeedsReviewCount > 0"
+              class="bg-[#FDFFB6] border-2 border-[#1A1A1A] px-4 py-2 rounded-none shadow-[2px_2px_0px_0px_#1A1A1A] flex items-center gap-2"
+            >
+              <AlertCircle :size="16" :stroke-width="2" class="shrink-0 text-[#92400E]" />
+              <span class="font-mono text-xs uppercase tracking-wider text-[#92400E]">
+                {{ t("batch.unresolvedItems") }}: {{ unresolvedNeedsReviewCount }}
+                — {{ t("batch.resolveBeforeSharing") }}
+              </span>
+            </div>
+            <button
+              @click="handleShare"
+              :disabled="isSharing || unresolvedNeedsReviewCount > 0"
+              class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-6 py-3 font-ui text-sm font-semibold uppercase tracking-wide shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 cursor-pointer flex items-center gap-2"
+            >
+              <Link2 :size="16" :stroke-width="2" class="shrink-0" />
+              <span>{{
+                isSharing
+                  ? t("batch.generatingLink")
+                  : t("batch.generateMagicLink")
+              }}</span>
+            </button>
+          </div>
 
           <!-- 2. PENDING_CONFIRMATION → keep the action area visible even
                when an older API response omitted magicToken. -->

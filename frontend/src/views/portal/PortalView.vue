@@ -192,6 +192,10 @@ watch(
 
         <hr class="border-b-2 border-[#1A1A1A] my-6" />
 
+        <div v-if="batchData.scopeReviewPending" class="mb-8 border-2 border-[#1A1A1A] bg-[#FDFFB6] p-4 font-body text-sm text-[#1A1A1A]">
+          Scope review is still pending for {{ batchData.hiddenItemsCount }} item(s). The freelancer is clarifying the remaining scope items. You can confirm after all items are reviewed.
+        </div>
+
         <!-- Metadata Grid -->
         <div class="grid grid-cols-2 gap-x-8 gap-y-2 mb-6">
           <div>
@@ -372,7 +376,7 @@ watch(
           </p>
           <button
             @click="handleConfirm"
-            :disabled="isConfirming"
+            :disabled="isConfirming || batchData.scopeReviewPending"
             class="w-full bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] py-4 font-ui text-base font-bold uppercase tracking-wider shadow-[4px_4px_0px_0px_#1A1A1A] rounded-none transition-all duration-100 ease-out hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_#1A1A1A] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0px_0px_#1A1A1A] disabled:opacity-50 disabled:cursor-not-allowed"
           >
              {{ isConfirming ? t("portal.confirming") : t("portal.confirmBtn") }}

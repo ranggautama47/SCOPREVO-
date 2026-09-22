@@ -5,9 +5,9 @@ import {
   revisionItemRepository,
 } from '../repositories/revision.repository';
 import { projectDocumentRepository } from '../repositories/project-document.repository';
-import { aiService } from './ai.service';
+import { aiService, type ByokOptions } from './ai.service';
 import { aiQuotaService } from './aiQuota.service';
-import { NotFoundError, ConflictError } from '../middleware/error.middleware';
+import { NotFoundError, ConflictError, ByokAuthFailedError } from '../middleware/error.middleware';
 import { env } from '../config/env';
 import { RevisionBatchRow, RevisionItemRow, ProjectDocumentRow } from '../types/db.types';
 import { cacheService } from './cache.service';
@@ -18,6 +18,10 @@ export interface RevisionItemDTO {
   category: string | null;
   scopeStatus: 'IN_SCOPE' | 'OUT_OF_SCOPE' | 'NEEDS_REVIEW';
   reason: string | null;
+}
+
+export interface ResolveItemScopeResult {
+  item: RevisionItemDTO;
 }
 
 export interface RevisionBatchDetailDTO {
@@ -36,8 +40,8 @@ export interface RevisionBatchListDTO {
   itemCount: number;
 }
 
-const BATCH_LIST_TTL = 60; // 60 seconds
-const BATCH_DETAIL_TTL = 60; // 60 seconds
+const BATCH_LIST_TTL = 60;
+const BATCH_DETAIL_TTL = 60;
 
 function toBatchDetailDTO(batch: RevisionBatchRow, items: RevisionItemRow[]): RevisionBatchDetailDTO {
   return {
@@ -100,6 +104,7 @@ export const revisionService = {
     projectId: string,
     accountId: string,
     rawInput: string,
+    byok?: ByokOptions,
   ): Promise<RevisionBatchDetailDTO> {
     // 1. Verify project exists and belongs to the authenticated user
     const project = await projectRepository.findById(projectId);
@@ -129,7 +134,10 @@ export const revisionService = {
     }
 
     // 4. Server-side AI quota: consume 1 from monthly account limit BEFORE AI call
-    await aiQuotaService.consume(accountId);
+    //    Skip when BYOK is active - user's own key doesn't consume server quota
+    if (!byok) {
+      await aiQuotaService.consume(accountId);
+    }
 
     // 5. Call AI service (validated schema and model fallback/retry)
     let context = '';
@@ -144,11 +152,14 @@ export const revisionService = {
     let aiResult: Awaited<ReturnType<typeof aiService.extractRevisions>>;
     try {
       aiResult = context
-        ? await aiService.extractRevisions(rawInput, context)
-        : await aiService.extractRevisions(rawInput);
-    } catch {
+        ? await aiService.extractRevisions(rawInput, context, byok)
+        : await aiService.extractRevisions(rawInput, undefined, byok);
+    } catch (err) {
+      if (err instanceof ByokAuthFailedError) {
+        throw err;
+      }
       console.warn('[AI] Primary/fallback failed, retrying without project context');
-      aiResult = await aiService.extractRevisions(rawInput);
+      aiResult = await aiService.extractRevisions(rawInput, undefined, byok);
     }
 
     // 6. Persist atomically using a PostgreSQL transaction
@@ -217,6 +228,11 @@ export const revisionService = {
       throw new ConflictError('INVALID_STATE', 'Batch is not in DRAFT status.');
     }
 
+    const unresolvedCount = await revisionItemRepository.countUnresolvedScopeItems(batchId);
+    if (unresolvedCount > 0) {
+      throw new ConflictError('UNRESOLVED_SCOPE_ITEMS', 'Resolve all NEEDS_REVIEW items before sharing.');
+    }
+
     const updatedBatch = await revisionBatchRepository.transitionStatus(
       batchId,
       'DRAFT',
@@ -247,6 +263,96 @@ export const revisionService = {
     };
   },
 
+  async resolveItemScope(
+    batchId: string,
+    itemId: string,
+    accountId: string,
+    scopeStatus: RevisionItemDTO['scopeStatus'],
+    reason?: string,
+  ): Promise<ResolveItemScopeResult> {
+    const batch = await revisionBatchRepository.findById(batchId);
+    if (!batch) {
+      throw new NotFoundError('Revision batch not found.');
+    }
+
+    const project = await projectRepository.findById(batch.project_id);
+    if (!project || project.account_id !== accountId) {
+      throw new NotFoundError('Revision batch not found.');
+    }
+
+    if (project.status === 'COMPLETED') {
+      throw new ConflictError(
+        'PROJECT_COMPLETED',
+        'Cannot resolve scope for a completed project. Reopen the project first.',
+      );
+    }
+
+    if (batch.status !== 'DRAFT' && batch.status !== 'PENDING_CONFIRMATION') {
+      throw new ConflictError('INVALID_STATE', 'Batch is not in a resolvable status.');
+    }
+
+    const item = await revisionItemRepository.findById(itemId);
+    if (!item) {
+      throw new NotFoundError('Revision item not found.');
+    }
+
+    if (item.revision_batch_id !== batchId) {
+      throw new NotFoundError('Revision item not found.');
+    }
+
+    if (item.scope_status !== 'NEEDS_REVIEW') {
+      throw new ConflictError('INVALID_STATE', 'Item already resolved');
+    }
+
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+
+      let reasonToStore: string | null = null;
+      if (scopeStatus === 'OUT_OF_SCOPE') {
+        if (!reason || reason.trim().length === 0) {
+          throw new ConflictError('VALIDATION_ERROR', 'Reason is required for OUT_OF_SCOPE.');
+        }
+        reasonToStore = reason.trim();
+      } else if (scopeStatus === 'IN_SCOPE') {
+        reasonToStore = null;
+      }
+
+      const updatedItem = await revisionItemRepository.updateScopeWithClient(
+        client,
+        itemId,
+        scopeStatus,
+        reasonToStore,
+      );
+      if (!updatedItem) {
+        throw new ConflictError('INVALID_STATE', 'Item already resolved by another session');
+      }
+
+      await client.query('COMMIT');
+
+      // Invalidate batch detail cache
+      await cacheService.del(
+        cacheService.buildKey(accountId, 'batch', batchId),
+        accountId,
+      );
+
+      return {
+        item: {
+          id: updatedItem.id,
+          description: updatedItem.description,
+          category: updatedItem.category,
+          scopeStatus: updatedItem.scope_status,
+          reason: updatedItem.reason,
+        },
+      };
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  },
+
   async confirmBatch(magicToken: string): Promise<{ id: string; status: RevisionBatchDetailDTO['status'] }> {
     const batch = await revisionBatchRepository.findByMagicToken(magicToken);
     if (!batch) {
@@ -255,6 +361,11 @@ export const revisionService = {
 
     if (batch.status !== 'PENDING_CONFIRMATION') {
       throw new ConflictError('INVALID_STATE', 'Batch is not pending confirmation.');
+    }
+
+    const unresolvedCount = await revisionItemRepository.countUnresolvedScopeItems(batch.id);
+    if (unresolvedCount > 0) {
+      throw new ConflictError('UNRESOLVED_SCOPE_ITEMS', 'Resolve all NEEDS_REVIEW items before confirmation.');
     }
 
     const updatedBatch = await revisionBatchRepository.transitionStatus(

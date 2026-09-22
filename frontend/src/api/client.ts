@@ -9,7 +9,11 @@ import type {
   ApiErrorResponse,
   ProjectDocument,
   AIQuota,
+  ValidateKeyResponse,
+  ResolveItemScopeRequest,
+  ResolveItemScopeResponse,
 } from '../types/api';
+import { getLlmHeaders } from '../services/llm-key';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
 const TOKEN_KEY = 'scoprevo_jwt';
@@ -172,11 +176,14 @@ export const apiClient = {
       request<{ batches: RevisionBatchSummary[] }>(`/projects/${id}/batches`, {
         method: 'GET',
       }),
-    submitRevision: (id: string, rawInput: string): Promise<{ batch: RevisionBatchDetail }> =>
-      request<{ batch: RevisionBatchDetail }>(`/projects/${id}/revisions`, {
+    submitRevision: (id: string, rawInput: string): Promise<{ batch: RevisionBatchDetail }> => {
+      const byokHeaders = getLlmHeaders();
+      return request<{ batch: RevisionBatchDetail }>(`/projects/${id}/revisions`, {
         method: 'POST',
         body: JSON.stringify({ rawInput }),
-      }),
+        headers: byokHeaders ?? undefined,
+      });
+    },
     // PATCH /api/projects/:id
     update: (id: string, data: {
       name?: string;
@@ -202,6 +209,11 @@ export const apiClient = {
     share: (id: string): Promise<ShareBatchResponse> =>
       request<ShareBatchResponse>(`/batches/${id}/share`, {
         method: 'PATCH',
+      }),
+    resolveScopeItem: (batchId: string, itemId: string, data: ResolveItemScopeRequest): Promise<ResolveItemScopeResponse> =>
+      request<ResolveItemScopeResponse>(`/batches/${batchId}/items/${itemId}/scope`, {
+        method: 'PATCH',
+        body: JSON.stringify(data),
       }),
   },
   portal: {
@@ -234,5 +246,14 @@ export const apiClient = {
       request<AIQuota>('/ai/quota', {
         method: 'GET',
       }),
+validateKey: (provider: string, apiKey: string): Promise<ValidateKeyResponse> => {
+       return request<ValidateKeyResponse>('/ai/validate-key', {
+         method: 'POST',
+         headers: {
+           'x-scoprevo-llm-provider': provider,
+           'x-scoprevo-llm-key': apiKey,
+         },
+       });
+     },
   },
 };

@@ -118,4 +118,39 @@ export const revisionItemRepository = {
     );
     return result.rows;
   },
+
+  async findById(itemId: string): Promise<RevisionItemRow | null> {
+    const result = await db.query<RevisionItemRow>(
+      `SELECT id, revision_batch_id, description, category, scope_status, reason, is_completed
+       FROM revision_item WHERE id = $1 LIMIT 1`,
+      [itemId],
+    );
+    return result.rows[0] ?? null;
+  },
+
+  async updateScopeWithClient(
+    client: PoolClient,
+    itemId: string,
+    scopeStatus: RevisionItemRow['scope_status'],
+    reason: string | null,
+  ): Promise<RevisionItemRow | null> {
+    const result = await client.query<RevisionItemRow>(
+      `UPDATE revision_item
+       SET scope_status = $1, reason = $2
+       WHERE id = $3 AND scope_status = 'NEEDS_REVIEW'
+       RETURNING id, revision_batch_id, description, category, scope_status, reason, is_completed`,
+      [scopeStatus, reason, itemId],
+    );
+    return result.rows[0] ?? null;
+  },
+
+  async countUnresolvedScopeItems(batchId: string): Promise<number> {
+    const result = await db.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS count
+       FROM revision_item
+       WHERE revision_batch_id = $1 AND scope_status = 'NEEDS_REVIEW'`,
+      [batchId],
+    );
+    return parseInt(result.rows[0]?.count ?? '0', 10);
+  },
 };
