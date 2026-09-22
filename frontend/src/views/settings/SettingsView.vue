@@ -17,7 +17,12 @@ import {
   Sliders,
   Info,
   Save,
+  Shield,
+  RotateCcw,
+  Trash2,
 } from "lucide-vue-next";
+import { getLlmProvider, getLlmKey, setLlmProvider, setLlmKey, clearLlmKey, type LlmProvider } from "../../services/llm-key";
+import type { ValidateKeyResponse } from "../../types/api";
 
 const { t, locale, setFontSize } = useI18n();
 
@@ -61,6 +66,120 @@ const quotaSaved = ref(false);
 const aiQuota = ref<AIQuota | null>(null);
 const isLoadingAiQuota = ref(true);
 const aiQuotaError = ref<string | null>(null);
+
+// BYOK (Bring Your Own Key)
+const byokMode = ref<'server' | 'own'>('server');
+const byokProvider = ref<LlmProvider>('openrouter');
+const byokKey = ref<string>('');
+const showByokKey = ref(false);
+const byokStatus = ref<'idle' | 'validating' | 'valid' | 'invalid' | 'rate_limited'>('idle');
+const byokMessage = ref<string | null>(null);
+const isValidatingByok = ref(false);
+const isSavingByok = ref(false);
+const lastValidatedProvider = ref<LlmProvider | null>(null);
+const lastValidatedKey = ref<string | null>(null);
+
+function loadByokSettings() {
+  const provider = getLlmProvider();
+  const key = getLlmKey();
+  if (provider && key) {
+    byokMode.value = 'own';
+    byokProvider.value = provider;
+    byokKey.value = key;
+    byokStatus.value = 'valid';
+    lastValidatedProvider.value = provider;
+    lastValidatedKey.value = key;
+  } else {
+    byokMode.value = 'server';
+    byokStatus.value = 'idle';
+    lastValidatedProvider.value = null;
+    lastValidatedKey.value = null;
+  }
+}
+
+async function handleValidateByok() {
+  if (!byokKey.value.trim()) {
+    byokMessage.value = t('settings.aiProvider.keyPlaceholder');
+    byokStatus.value = 'invalid';
+    return;
+  }
+  byokMessage.value = null;
+  byokStatus.value = 'validating';
+  isValidatingByok.value = true;
+  try {
+    const res: ValidateKeyResponse = await apiClient.ai.validateKey(byokProvider.value, byokKey.value);
+    if (res.valid) {
+      byokStatus.value = 'valid';
+      lastValidatedProvider.value = byokProvider.value;
+      lastValidatedKey.value = byokKey.value;
+      byokMessage.value = t('settings.aiProvider.validOk');
+    } else {
+      byokStatus.value = 'invalid';
+      byokMessage.value = res.error || t('settings.aiProvider.validFail');
+    }
+  } catch (err: unknown) {
+    if (err instanceof ApiError && err.code === 'RATE_LIMITED') {
+      byokStatus.value = 'rate_limited';
+      byokMessage.value = t('settings.aiProvider.rateLimited');
+    } else {
+      byokStatus.value = 'invalid';
+      byokMessage.value = err instanceof ApiError ? err.message : t('settings.aiProvider.validFail');
+    }
+  } finally {
+    isValidatingByok.value = false;
+  }
+}
+
+async function handleSaveByok() {
+  if (!byokKey.value.trim()) {
+    byokMessage.value = t('settings.aiProvider.keyPlaceholder');
+    byokStatus.value = 'invalid';
+    return;
+  }
+  byokMessage.value = null;
+  isSavingByok.value = true;
+  try {
+    const res: ValidateKeyResponse = await apiClient.ai.validateKey(byokProvider.value, byokKey.value);
+    if (res.valid) {
+      setLlmProvider(byokProvider.value);
+      setLlmKey(byokKey.value);
+      byokMode.value = 'own';
+      byokStatus.value = 'valid';
+      lastValidatedProvider.value = byokProvider.value;
+      lastValidatedKey.value = byokKey.value;
+      byokMessage.value = t('settings.aiProvider.saved');
+    } else {
+      byokStatus.value = 'invalid';
+      byokMessage.value = res.error || t('settings.aiProvider.validFail');
+    }
+  } catch (err: unknown) {
+    if (err instanceof ApiError && err.code === 'RATE_LIMITED') {
+      byokStatus.value = 'rate_limited';
+      byokMessage.value = t('settings.aiProvider.rateLimited');
+    } else {
+      byokStatus.value = 'invalid';
+      byokMessage.value = err instanceof ApiError ? err.message : t('settings.aiProvider.validFail');
+    }
+  } finally {
+    isSavingByok.value = false;
+  }
+}
+
+function handleDeleteByok() {
+  clearLlmKey();
+  byokMode.value = 'server';
+  byokKey.value = '';
+  byokStatus.value = 'idle';
+  lastValidatedProvider.value = null;
+  lastValidatedKey.value = null;
+  byokMessage.value = t('settings.aiProvider.deleted');
+}
+
+const isKeyMismatch = computed(() => {
+  return byokStatus.value === 'valid' &&
+    (lastValidatedProvider.value !== byokProvider.value ||
+     lastValidatedKey.value !== byokKey.value);
+});
 
 const isEmailVerified = computed(
   () => authStore.account?.emailVerified === true,
@@ -125,6 +244,7 @@ function formatDate(dateStr: string): string {
 
 onMounted(() => {
   loadDefaultQuota();
+  loadByokSettings();
   authStore.refreshAccount();
   fetchAiQuota();
 });
@@ -756,6 +876,176 @@ const languageOptions = computed<{ value: "en" | "id"; label: string }[]>(
           class="bg-[#FEE2E2] border-2 border-[#E63946] p-3 rounded-none font-['Noto_Serif',serif] text-sm text-[#991B1B]"
         >
           {{ t("settings.aiQuota.exhaustedNote") }}
+        </div>
+      </div>
+    </section>
+
+    <!-- BYOK AI PROVIDER CARD -->
+    <section
+      class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-6 shadow-[4px_4px_0px_0px_#1A1A1A]"
+    >
+      <div
+        class="flex items-center gap-2 mb-6 border-b-2 border-[#1A1A1A]/10 pb-3"
+      >
+        <Shield class="w-5 h-5 text-[#1A1A1A]" />
+        <h2
+          class="font-['Inter',sans-serif] text-xs font-bold uppercase tracking-wider text-[#1A1A1A]"
+        >
+          {{ t("settings.aiProvider.title") }}
+        </h2>
+      </div>
+
+      <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]/70 mb-6">
+        {{ t("settings.aiProvider.desc") }}
+      </p>
+
+      <!-- Mode Selection -->
+      <div class="space-y-4">
+        <div>
+          <label
+            class="block font-['JetBrains_Mono',monospace] text-[10px] font-bold uppercase tracking-wider text-[#1A1A1A]/60 mb-2"
+          >
+            {{ t("settings.aiProvider.modeServer") }} / {{ t("settings.aiProvider.modeOwn") }}
+          </label>
+          <div class="flex gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                v-model="byokMode"
+                value="server"
+                class="w-4 h-4 border-2 border-[#1A1A1A] accent-[#006D77] focus:ring-2 focus:ring-[#006D77]"
+              />
+              <span class="font-['Inter',sans-serif] text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">
+                {{ t("settings.aiProvider.modeServer") }}
+              </span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                v-model="byokMode"
+                value="own"
+                class="w-4 h-4 border-2 border-[#1A1A1A] accent-[#006D77] focus:ring-2 focus:ring-[#006D77]"
+              />
+              <span class="font-['Inter',sans-serif] text-xs font-bold uppercase tracking-wider text-[#1A1A1A]">
+                {{ t("settings.aiProvider.modeOwn") }}
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Own Key Fields -->
+        <div v-if="byokMode === 'own'" class="space-y-4 border-2 border-[#1A1A1A] p-4 bg-[#FDFFB6]/30">
+          <div>
+            <label
+              class="block font-['JetBrains_Mono',monospace] text-[10px] font-bold uppercase tracking-wider text-[#1A1A1A]/60 mb-1"
+            >
+              {{ t("settings.aiProvider.providerLabel") }}
+            </label>
+            <select
+              v-model="byokProvider"
+              class="w-full bg-[#FAFAF9] border-2 border-[#1A1A1A] px-3 py-2 font-['Noto_Serif',serif] text-sm text-[#1A1A1A] rounded-none focus:outline-none focus:bg-[#FDFFB6]"
+            >
+              <option value="openrouter">{{ t("settings.aiProvider.openRouter") }}</option>
+              <option value="google">{{ t("settings.aiProvider.googleAiStudio") }}</option>
+            </select>
+          </div>
+
+          <div>
+            <label
+              class="block font-['JetBrains_Mono',monospace] text-[10px] font-bold uppercase tracking-wider text-[#1A1A1A]/60 mb-1"
+            >
+              {{ t("settings.aiProvider.keyLabel") }}
+            </label>
+            <div class="relative flex items-center">
+              <input
+                v-model="byokKey"
+                :type="showByokKey ? 'text' : 'password'"
+                maxlength="512"
+                class="w-full bg-[#FAFAF9] border-2 border-[#1A1A1A] px-3 py-2 pr-10 font-['JetBrains_Mono',monospace] text-sm text-[#1A1A1A] rounded-none focus:outline-none focus:bg-[#FDFFB6] placeholder:text-[#1A1A1A]/40"
+                :placeholder="t('settings.aiProvider.keyPlaceholder')"
+              />
+              <button
+                type="button"
+                @click="showByokKey = !showByokKey"
+                class="absolute right-3 text-[#1A1A1A]/60 hover:text-[#1A1A1A] cursor-pointer"
+              >
+                <EyeOff v-if="showByokKey" class="w-4 h-4" />
+                <Eye v-else class="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <button
+              @click="handleValidateByok"
+              :disabled="isValidatingByok || !byokKey.trim() || byokStatus === 'rate_limited'"
+              class="bg-[#FDFFB6] text-[#1A1A1A] border-2 border-[#1A1A1A] px-4 py-2 font-['Inter',sans-serif] text-xs font-bold uppercase tracking-wider rounded-none hover:bg-[#DCCCFF] disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+            >
+              <RotateCcw class="w-4 h-4" :class="{ 'animate-spin': isValidatingByok }" />
+              {{ isValidatingByok ? t('settings.aiProvider.validating') : byokStatus === 'rate_limited' ? t('settings.aiProvider.rateLimited') : t('settings.aiProvider.validate') }}
+            </button>
+            <button
+              @click="handleSaveByok"
+              :disabled="isSavingByok || !byokKey.trim()"
+              class="bg-[#006D77] text-[#FAFAF9] border-2 border-[#1A1A1A] px-4 py-2 font-['Inter',sans-serif] text-xs font-bold uppercase tracking-wider shadow-[2px_2px_0px_0px_#1A1A1A] rounded-none hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#1A1A1A] transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+            >
+              <Save class="w-4 h-4" />
+              {{ t('settings.aiProvider.save') }}
+            </button>
+            <button
+              @click="handleDeleteByok"
+              class="bg-[#FAFAF9] text-[#E63946] border-2 border-[#E63946] px-4 py-2 font-['Inter',sans-serif] text-xs font-bold uppercase tracking-wider rounded-none hover:bg-[#FEE2E2] transition-colors cursor-pointer flex items-center gap-1.5"
+            >
+              <Trash2 class="w-4 h-4" />
+              {{ t('settings.aiProvider.delete') }}
+            </button>
+          </div>
+
+          <!-- Status Message -->
+          <div
+            v-if="byokMessage"
+            :class="[
+              'border-2 p-3 rounded-none font-[\'Noto_Serif\',serif] text-xs',
+              byokStatus === 'valid' ? 'bg-[#DCFCE7] border-[#166534] text-[#166534]' :
+              byokStatus === 'invalid' ? 'bg-[#FEE2E2] border-[#E63946] text-[#991B1B]' :
+              byokStatus === 'rate_limited' ? 'bg-[#FDFFB6] border-[#E63946] text-[#991B1B]' :
+              'bg-[#FDFFB6] border-[#1A1A1A] text-[#1A1A1B]'
+            ]"
+          >
+            {{ byokMessage }}
+          </div>
+
+          <!-- Key Mismatch Warning -->
+          <div
+            v-if="isKeyMismatch"
+            class="bg-[#FDFFB6] border-2 border-[#E63946] px-3 py-2 font-['Noto_Serif',serif] text-xs text-[#991B1B]"
+          >
+            {{ t('settings.aiProvider.keyMismatch') }}
+          </div>
+
+          <!-- Active Badge -->
+          <div
+            v-if="byokStatus === 'valid'"
+            class="bg-[#DCFCE7] border-2 border-[#166534] px-3 py-2 font-['JetBrains_Mono',monospace] text-[10px] font-bold uppercase tracking-wider text-[#166534] flex items-center gap-1.5"
+          >
+            <Check class="w-3.5 h-3.5" />
+            {{ t("settings.aiProvider.activeBadge") }}
+          </div>
+
+          <!-- Warning -->
+          <p class="font-['Noto_Serif',serif] text-xs text-[#1A1A1A]/70 italic border-l-2 border-[#E63946] pl-3 py-1 bg-[#FEE2E2]/30">
+            {{ t("settings.aiProvider.warning") }}
+          </p>
+        </div>
+
+        <!-- Server Key Note -->
+        <div v-if="byokMode === 'server'" class="bg-[#FAFAF9] border-2 border-[#1A1A1A] p-4">
+          <p class="font-['Noto_Serif',serif] text-sm text-[#1A1A1A]/70">
+            {{ t("settings.aiQuota.desc") }}
+          </p>
+          <p class="font-['Noto_Serif',serif] text-xs text-[#1A1A1A]/60 mt-2">
+            {{ t("settings.aiQuota.exhaustedNote") }}
+          </p>
         </div>
       </div>
     </section>

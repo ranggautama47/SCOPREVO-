@@ -67,6 +67,15 @@ export interface ShareBatchResponse {
   };
 }
 
+export interface ResolveItemScopeRequest {
+  scopeStatus: 'IN_SCOPE' | 'OUT_OF_SCOPE';
+  reason?: string;
+}
+
+export interface ResolveItemScopeResponse {
+  item: RevisionItem;
+}
+
 export interface OverviewData {
   activeProjects: number;
   pendingConfirmations: number;
@@ -113,6 +122,9 @@ export interface PortalBatchResponse {
     items: RevisionItem[];
     project: PortalProject;
   };
+  unresolvedCount: number;
+  hiddenItemsCount: number;
+  scopeReviewPending: boolean;
 }
 
 export interface AIQuota {
@@ -121,6 +133,11 @@ export interface AIQuota {
   limit: number;
   remaining: number;
   resetAt: string;
+}
+
+export interface ValidateKeyResponse {
+  valid: boolean;
+  error?: string;
 }
 
 export type ProjectDocumentExtractionStatus = 'pending' | 'completed' | 'failed';

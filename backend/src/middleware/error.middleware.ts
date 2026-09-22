@@ -46,6 +46,12 @@ export class TooManyRequestsError extends AppError {
     this.name = 'TooManyRequestsError';
   }
 }
+export class ByokAuthFailedError extends AppError {
+  constructor(message = 'BYOK authentication failed.', details?: unknown) {
+    super('BYOK_AUTH_FAILED', message, 402, { byok: true, ...details as object });
+    this.name = 'ByokAuthFailedError';
+  }
+}
 export class ServiceUnavailableError extends AppError {
   constructor(message = 'Service temporarily unavailable.', code = 'SERVICE_UNAVAILABLE', details?: unknown) {
     super(code, message, 503, details);

@@ -240,7 +240,7 @@ export const standardApiLimiter = createRateLimiter({
   failurePolicy: "fail-open",
 });
 
-// 5. Heavy AI dual limiter: 5 req/10min AND 20 req/hour/account (Fail-closed)
+// 6. Heavy AI dual limiter: 5 req/10min AND 20 req/hour/account (Fail-closed)
 const aiLimiter10m = createRateLimiter({
   points: 5,
   duration: 600,
@@ -253,6 +253,15 @@ const aiLimiter1h = createRateLimiter({
   points: 20,
   duration: 3600,
   keyPrefix: "ai:revisions:1h",
+  type: "account",
+  failurePolicy: "fail-closed",
+});
+
+// 7. Validate-key limiter: 5 req/60s/account (Fail-closed)
+export const validateKeyLimiter = createRateLimiter({
+  points: 5,
+  duration: 60,
+  keyPrefix: "ai:validate-key",
   type: "account",
   failurePolicy: "fail-closed",
 });

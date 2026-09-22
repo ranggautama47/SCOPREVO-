@@ -206,6 +206,9 @@ try {
         case "AI_QUOTA_EXHAUSTED":
           errorMsg.value = t("projectDetail.errAiQuotaExhausted");
           break;
+        case "BYOK_RATE_LIMITED":
+          errorMsg.value = t("projectDetail.errByokRateLimited");
+          break;
         case "AI_PROCESSING_FAILED":
           errorMsg.value = t("projectDetail.errAIProcessing");
           break;
