@@ -15,9 +15,27 @@ export interface OverviewDTO {
     createdAt: Date;
     itemCount: number;
   }[];
+  actionableCount: number;
+  actionableBatches: {
+    id: string;
+    projectId: string;
+    projectName: string;
+    status: string;
+    createdAt: Date;
+    itemCount: number;
+  }[];
+  recentApprovedBatches: {
+    id: string;
+    projectId: string;
+    projectName: string;
+    createdAt: Date;
+    itemCount: number;
+  }[];
 }
 
 const RECENT_PROJECT_LIMIT = 5;
+const ACTIONABLE_BATCHES_LIMIT = 10;
+const RECENT_APPROVED_LIMIT = 3;
 const OVERVIEW_TTL = 30; // 30 seconds
 
 export const overviewService = {
@@ -28,33 +46,41 @@ export const overviewService = {
       return cached;
     }
 
-    const [projectsResult, pendingResult, revisionsResult, recentResult, recentBatchesResult] =
-      await Promise.all([
-        db.query<{ count: string }>(
-          `SELECT COUNT(*)::text AS count FROM project WHERE account_id = $1 AND status = 'ACTIVE'`,
-          [accountId],
-        ),
-        db.query<{ count: string }>(
-          `SELECT COUNT(rb.*)::text AS count FROM revision_batch rb JOIN project p ON p.id = rb.project_id WHERE p.account_id = $1 AND rb.status = 'PENDING_CONFIRMATION'`,
-          [accountId],
-        ),
-        db.query<{ count: string }>(
-          `SELECT COUNT(rb.*)::text AS count FROM revision_batch rb JOIN project p ON p.id = rb.project_id WHERE p.account_id = $1 AND rb.status = 'APPROVED'`,
-          [accountId],
-        ),
-        db.query<ProjectRow>(
-          `SELECT id, account_id, name, client_name, total_allowed_revisions, created_at FROM project WHERE account_id = $1 ORDER BY created_at DESC LIMIT $2`,
-          [accountId, RECENT_PROJECT_LIMIT],
-        ),
-        db.query<{
-          id: string;
-          project_id: string;
-          project_name: string;
-          status: string;
-          created_at: Date;
-          item_count: string;
-        }>(
-          `SELECT 
+    const [
+      projectsResult,
+      pendingResult,
+      revisionsResult,
+      recentResult,
+      recentBatchesResult,
+      actionableCountResult,
+      actionableBatchesResult,
+      recentApprovedBatchesResult,
+    ] = await Promise.all([
+      db.query<{ count: string }>(
+        `SELECT COUNT(*)::text AS count FROM project WHERE account_id = $1 AND status = 'ACTIVE'`,
+        [accountId],
+      ),
+      db.query<{ count: string }>(
+        `SELECT COUNT(rb.*)::text AS count FROM revision_batch rb JOIN project p ON p.id = rb.project_id WHERE p.account_id = $1 AND rb.status = 'PENDING_CONFIRMATION'`,
+        [accountId],
+      ),
+      db.query<{ count: string }>(
+        `SELECT COUNT(rb.*)::text AS count FROM revision_batch rb JOIN project p ON p.id = rb.project_id WHERE p.account_id = $1 AND rb.status = 'APPROVED'`,
+        [accountId],
+      ),
+      db.query<ProjectRow>(
+        `SELECT id, account_id, name, client_name, total_allowed_revisions, created_at FROM project WHERE account_id = $1 ORDER BY created_at DESC LIMIT $2`,
+        [accountId, RECENT_PROJECT_LIMIT],
+      ),
+      db.query<{
+        id: string;
+        project_id: string;
+        project_name: string;
+        status: string;
+        created_at: Date;
+        item_count: string;
+      }>(
+        `SELECT 
             rb.id, 
             rb.project_id, 
             p.name AS project_name, 
@@ -68,9 +94,61 @@ export const overviewService = {
            GROUP BY rb.id, p.name
            ORDER BY rb.created_at DESC
            LIMIT 5`,
-          [accountId],
-        ),
-      ]);
+        [accountId],
+      ),
+      db.query<{ count: string }>(
+        `SELECT COUNT(rb.*)::text AS count FROM revision_batch rb JOIN project p ON p.id = rb.project_id WHERE p.account_id = $1 AND p.status = 'ACTIVE' AND rb.status IN ('DRAFT', 'PENDING_CONFIRMATION')`,
+        [accountId],
+      ),
+      db.query<{
+        id: string;
+        project_id: string;
+        project_name: string;
+        status: string;
+        created_at: Date;
+        item_count: string;
+      }>(
+        `SELECT 
+            rb.id, 
+            rb.project_id, 
+            p.name AS project_name, 
+            rb.status::text AS status, 
+            rb.created_at,
+            COUNT(ri.id)::text AS item_count
+           FROM revision_batch rb
+           JOIN project p ON p.id = rb.project_id
+           LEFT JOIN revision_item ri ON ri.revision_batch_id = rb.id
+           WHERE p.account_id = $1 AND p.status = 'ACTIVE'
+           AND rb.status IN ('DRAFT', 'PENDING_CONFIRMATION')
+           GROUP BY rb.id, p.name
+           ORDER BY rb.created_at DESC
+           LIMIT $2`,
+        [accountId, ACTIONABLE_BATCHES_LIMIT],
+      ),
+      db.query<{
+        id: string;
+        project_id: string;
+        project_name: string;
+        created_at: Date;
+        item_count: string;
+      }>(
+        // proxy: 3 approved dengan created_at terbaru, BUKAN urutan waktu approval (approved_at belum ada)
+        `SELECT 
+            rb.id, 
+            rb.project_id, 
+            p.name AS project_name, 
+            rb.created_at,
+            COUNT(ri.id)::text AS item_count
+           FROM revision_batch rb
+           JOIN project p ON p.id = rb.project_id
+           LEFT JOIN revision_item ri ON ri.revision_batch_id = rb.id
+           WHERE p.account_id = $1 AND p.status = 'ACTIVE' AND rb.status = 'APPROVED'
+           GROUP BY rb.id, p.name
+           ORDER BY rb.created_at DESC
+           LIMIT $2`,
+        [accountId, RECENT_APPROVED_LIMIT],
+      ),
+    ]);
 
     const result: OverviewDTO = {
       activeProjects: parseInt(projectsResult.rows[0]?.count ?? '0', 10),
@@ -87,6 +165,22 @@ export const overviewService = {
         projectId: r.project_id,
         projectName: r.project_name,
         status: r.status,
+        createdAt: r.created_at,
+        itemCount: parseInt(r.item_count ?? '0', 10),
+      })),
+      actionableCount: parseInt(actionableCountResult.rows[0]?.count ?? '0', 10),
+      actionableBatches: actionableBatchesResult.rows.map((r) => ({
+        id: r.id,
+        projectId: r.project_id,
+        projectName: r.project_name,
+        status: r.status,
+        createdAt: r.created_at,
+        itemCount: parseInt(r.item_count ?? '0', 10),
+      })),
+      recentApprovedBatches: recentApprovedBatchesResult.rows.map((r) => ({
+        id: r.id,
+        projectId: r.project_id,
+        projectName: r.project_name,
         createdAt: r.created_at,
         itemCount: parseInt(r.item_count ?? '0', 10),
       })),
